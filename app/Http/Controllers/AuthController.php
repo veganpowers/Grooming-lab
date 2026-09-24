@@ -18,15 +18,17 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
+        $request->merge(['login' => $request->input('login', $request->input('email'))]);
+        $credentials = $request->validate(['login' => ['required', 'string'], 'password' => ['required', 'string']]);
+        $loginField = str_contains($credentials['login'], '@') ? 'email' : 'username';
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Email atau password tidak cocok.'])->onlyInput('email');
+        if (! Auth::attempt([$loginField => $credentials['login'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+            return back()->withErrors(['login' => 'Username/email atau password tidak cocok.'])->onlyInput('login');
         }
 
         $request->session()->regenerate();
 
-        return to_route('dashboard');
+        return to_route($request->user()->role === 'admin' ? 'admin.dashboard' : 'dashboard');
     }
 
     public function showRegister(): View

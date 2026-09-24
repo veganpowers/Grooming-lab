@@ -11,9 +11,14 @@ use Illuminate\View\View;
 
 class BookingController extends Controller
 {
-    public function dashboard(): View
+    public function dashboard(): View|RedirectResponse
     {
         $user = request()->user();
+
+        if ($user->role === 'admin') {
+            return to_route('admin.dashboard');
+        }
+
         $bookings = $user->role === 'customer'
             ? $user->bookings()->with('service')->latest('appointment_at')->get()
             : Booking::with(['user', 'service'])->latest('appointment_at')->get();

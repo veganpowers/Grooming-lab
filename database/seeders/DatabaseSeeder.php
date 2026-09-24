@@ -27,8 +27,8 @@ class DatabaseSeeder extends Seeder
         Service::create(['name' => 'Make Up + Soft Lens', 'description' => 'Makeup dengan tambahan soft lens.', 'duration_minutes' => 75, 'price' => 300000]);
         Service::create(['name' => 'Make Up + Hair Do', 'description' => 'Makeup dan penataan rambut.', 'duration_minutes' => 90, 'price' => 320000]);
 
-        User::create(['name' => 'Admin TrimHaus', 'email' => 'admin@trimhaus.test', 'password' => Hash::make('password'), 'role' => 'admin']);
-        User::create(['name' => 'Kasir TrimHaus', 'email' => 'kasir@trimhaus.test', 'password' => Hash::make('password'), 'role' => 'cashier']);
+        User::create(['name' => 'Admin TrimHaus', 'username' => 'admin', 'email' => 'admin@trimhaus.test', 'password' => Hash::make('password'), 'role' => 'admin']);
+        User::create(['name' => 'Kasir TrimHaus', 'username' => 'kasir', 'email' => 'kasir@trimhaus.test', 'password' => Hash::make('password'), 'role' => 'cashier']);
         User::create(['name' => 'Pelanggan Demo', 'email' => 'pelanggan@trimhaus.test', 'password' => Hash::make('password'), 'role' => 'customer']);
     }
 }

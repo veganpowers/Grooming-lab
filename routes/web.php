@@ -25,21 +25,21 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/order', [DashboardController::class, 'order'])->name('pelanggan.order');
         Route::get('/profile', [DashboardController::class, 'profile'])->name('pelanggan.profile');
         Route::get('/booking/input', [DashboardController::class, 'bookingInput'])->name('pelanggan.booking.input');
+        });
     });
-});
 
-// Group khusus Kasir
-Route::middleware(['userAkses:kasir'])->group(function () {
-    Route::get('/dashboard/kasir', [DashboardController::class, 'kasir'])->name('kasir.dashboard');
-    Route::get('/dashboard/kasir/booking-walkin', [DashboardController::class, 'bookingWalkin'])->name('kasir.booking.walkin');
-});
+    // Group khusus Kasir
+    Route::middleware(['userAkses:kasir'])->group(function () {
+        Route::get('/dashboard/kasir', [DashboardController::class, 'kasir'])->name('kasir.dashboard');
+        Route::get('/dashboard/kasir/booking-walkin', [DashboardController::class, 'bookingWalkin'])->name('kasir.booking.walkin');
+    });
 
-// Group khusus Admin
-Route::middleware(['userAkses:admin'])->group(function () {
-    Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('admin.dashboard');
-    Route::get('/dashboard/admin/kelola-karyawan', [DashboardController::class, 'kelolaKaryawan'])->name('admin.karyawan');
-    Route::get('/dashboard/admin/laporan-pendapatan', [DashboardController::class, 'laporanPendapatan'])->name('admin.laporan');
-});
+    // Group khusus Admin
+    Route::middleware(['userAkses:admin'])->group(function () {
+        Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('admin.dashboard');
+        Route::get('/dashboard/admin/kelola-karyawan', [DashboardController::class, 'kelolaKaryawan'])->name('admin.karyawan');
+        Route::get('/dashboard/admin/laporan-pendapatan', [DashboardController::class, 'laporanPendapatan'])->name('admin.laporan');
+    });
 
-// Logout
-Route::get('/logout', [SesiController::class, 'logout'])->name('logout');
+    // Logout
+    Route::get('/logout', [SesiController::class, 'logout'])->name('logout');

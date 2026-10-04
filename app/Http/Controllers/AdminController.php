@@ -18,7 +18,7 @@ class AdminController extends Controller
             ->whereDate('appointment_at', $today)
             ->get();
 
-        return view('admin.dashboard', [
+        return view('Admin.dashboard', [
             'todayBookings' => $todayBookings,
             'todayRevenue' => $todayBookings->whereIn('status', ['confirmed', 'completed'])->sum(fn (Booking $booking): int => $booking->service->price),
             'weeklyRevenue' => collect(range(6, 0))->map(function (int $daysAgo) use ($today): int {
@@ -28,7 +28,7 @@ class AdminController extends Controller
                     ->get()
                     ->sum(fn (Booking $booking): int => $booking->service->price);
             }),
-            'employees' => User::whereIn('role', ['cashier', 'admin'])->orderBy('role')->orderBy('name')->get(),
+            'employees' => User::whereIn('role', ['kasir', 'admin'])->orderBy('role')->orderBy('name')->get(),
         ]);
     }
 
@@ -45,7 +45,7 @@ class AdminController extends Controller
             'username' => $data['username'],
             'email' => $data['username'].'@ruangrias.local',
             'password' => $data['password'],
-            'role' => 'cashier',
+            'role' => 'kasir',
         ]);
 
         return to_route('admin.dashboard')->with('success', 'Akun karyawan berhasil dibuat.');

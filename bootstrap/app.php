@@ -1,10 +1,15 @@
 <?php
 
+<<<<<<< HEAD
 use App\Http\Middleware\UserAkses;
+=======
+use App\Http\Middleware\RoleMiddleware;
+>>>>>>> bd5a20f55bf1875d192fdc9385ff71b0c9956405
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\Auth; // <-- Tambahkan import Facade Auth
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -40,3 +45,20 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->create();
+=======
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias(['role' => RoleMiddleware::class]);
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
+    })->create();
+>>>>>>> bd5a20f55bf1875d192fdc9385ff71b0c9956405

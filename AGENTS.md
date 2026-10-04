@@ -7,7 +7,11 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 ## Foundational Context
 
+<<<<<<< HEAD
 This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+=======
+This application is a Laravel application running on PHP 8.3. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+>>>>>>> bd5a20f55bf1875d192fdc9385ff71b0c9956405
 
 Before relying on a package's API, confirm its installed version:
 - PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
@@ -105,6 +109,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
 - Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
 
+<<<<<<< HEAD
 === tests rules ===
 
 # Test Enforcement
@@ -115,6 +120,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Test the changed behavior and its important failure modes, but do not add tests beyond them.
 - Read the `testing-best-practices` skill before writing tests.
 
+=======
+>>>>>>> bd5a20f55bf1875d192fdc9385ff71b0c9956405
 === laravel/core rules ===
 
 # Do Things the Laravel Way

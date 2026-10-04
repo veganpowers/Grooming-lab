@@ -1,6 +1,10 @@
 {
     "agents": [
+<<<<<<< HEAD
         "claude_code"
+=======
+        "copilot"
+>>>>>>> bd5a20f55bf1875d192fdc9385ff71b0c9956405
     ],
     "cloud": true,
     "guidelines": true,

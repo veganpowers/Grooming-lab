@@ -2,10 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Auth;
+use App\Models\Booking;
+use App\Models\Employee;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
+    private const WALK_IN_SERVICE_CATALOG = [
+        'barber' => [
+            'Fast Haircut' => 25000,
+            'Rileks Ganteng' => 35000,
+            'Full Grooming' => 50000,
+        ],
+        'mua' => [
+            'Makeup Only' => 250000,
+            'Make Up + Soft Lens' => 300000,
+            'Make Up + Hijab/Hair Do' => 320000,
+            'Make Up + Hijab/Hair Do + Soft Lens' => 360000,
+        ],
+    ];
+
     // function index(){
     //     echo "hallo selamat datang " . Auth::user()->name;
     //     echo "<br>";
@@ -18,12 +39,65 @@ class DashboardController extends Controller
 
     public function kasir()
     {
-        return view('Kasir.Dashboard');
+        $walkInBookings = Booking::query()
+            ->whereDate('appointment_at', now()->toDateString())
+            ->latest('appointment_at')
+            ->get();
+
+        return view('Kasir.Dashboard', [
+            'walkInBookings' => $walkInBookings,
+        ]);
     }
 
     public function bookingWalkin()
     {
-        return view('Kasir.BookingWalkin');
+        return view('Kasir.BookingWalkin', [
+            'walkInServiceCatalog' => self::WALK_IN_SERVICE_CATALOG,
+            'employees' => Employee::query()
+                ->orderBy('name')
+                ->get(['name', 'position'])
+                ->toArray(),
+        ]);
+    }
+
+    public function storeWalkin(Request $request): RedirectResponse
+    {
+        $category = $request->input('category');
+        $availableServices = self::WALK_IN_SERVICE_CATALOG[$category] ?? [];
+        $staffPosition = $category === 'mua' ? 'MUA Artist' : 'Hair Stylist';
+        $availableStaff = Employee::query()
+            ->where('position', $staffPosition)
+            ->pluck('name')
+            ->all();
+
+        $data = $request->validate([
+            'customer_name' => ['required', 'string', 'max:100'],
+            'category' => ['required', Rule::in(array_keys(self::WALK_IN_SERVICE_CATALOG))],
+            'service_name' => ['required', 'string', Rule::in(array_keys($availableServices))],
+            'staff_name' => ['required', 'string', Rule::in($availableStaff)],
+        ]);
+
+        Booking::create([
+            'customer_name' => $data['customer_name'],
+            'category' => $data['category'],
+            'service_name' => $data['service_name'],
+            'service_price' => self::WALK_IN_SERVICE_CATALOG[$data['category']][$data['service_name']],
+            'staff_name' => $data['staff_name'],
+            'cashier_id' => $request->user()->getKey(),
+            'appointment_at' => now(),
+            'status' => 'pending',
+        ]);
+
+        return to_route('kasir.booking.walkin')->with('success', 'Booking walk-in berhasil disimpan.');
+    }
+
+    public function completeBooking(Booking $booking): RedirectResponse
+    {
+        abort_unless(in_array($booking->status, ['pending', 'confirmed', 'in_progress'], true), 409);
+
+        $booking->update(['status' => 'completed']);
+
+        return to_route('kasir.dashboard')->with('success', 'Booking berhasil diselesaikan.');
     }
 
     public function admin()
@@ -36,9 +110,111 @@ class DashboardController extends Controller
         return view('Admin.KelolaKaryawan');
     }
 
-    public function laporanPendapatan()
+    public function laporanPendapatan(Request $request): View|RedirectResponse
     {
-        return view('Admin.LaporanPendapatan');
+        if ($request->hasAny(['start_date', 'end_date'])) {
+            $range = $request->validate([
+                'start_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+                'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date', 'before_or_equal:today'],
+            ]);
+
+            $startDate = CarbonImmutable::parse($range['start_date']);
+            $endDate = CarbonImmutable::parse($range['end_date']);
+        } else {
+            $startDate = CarbonImmutable::now()->startOfMonth();
+            $endDate = CarbonImmutable::today();
+        }
+
+        if ($startDate->diffInDays($endDate) > 30) {
+            return back()->withErrors(['end_date' => 'Rentang laporan maksimal 31 hari.'])->withInput();
+        }
+
+        $transactions = Booking::query()
+            ->whereBetween('appointment_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->latest('appointment_at')
+            ->get();
+        $completedTransactions = $transactions->where('status', 'completed');
+
+        return view('Admin.LaporanPendapatan', [
+            'transactions' => $transactions,
+            'startDate' => $startDate->toDateString(),
+            'endDate' => $endDate->toDateString(),
+            'today' => CarbonImmutable::today()->toDateString(),
+            'reportTotal' => $completedTransactions->sum('service_price'),
+            'barberTotal' => $completedTransactions->where('category', 'barber')->sum('service_price'),
+            'muaTotal' => $completedTransactions->where('category', 'mua')->sum('service_price'),
+        ]);
+    }
+
+    public function exportLaporanPendapatan(Request $request): StreamedResponse|RedirectResponse
+    {
+        $range = $request->validate([
+            'start_date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date', 'before_or_equal:today'],
+        ]);
+
+        $startDate = CarbonImmutable::parse($range['start_date']);
+        $endDate = CarbonImmutable::parse($range['end_date']);
+
+        if ($startDate->diffInDays($endDate) > 30) {
+            return back()->withErrors(['end_date' => 'Rentang ekspor maksimal 31 hari.'])->withInput();
+        }
+
+        return response()->streamDownload(function () use ($startDate, $endDate): void {
+            $transactions = Booking::query()
+                ->whereBetween('appointment_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+                ->orderBy('appointment_at')
+                ->get();
+            $completedTransactions = $transactions->where('status', 'completed');
+            $completedRevenue = $completedTransactions->sum('service_price');
+
+            $stream = fopen('php://output', 'w');
+            fwrite($stream, "\xEF\xBB\xBF");
+            fputcsv($stream, ['sep=,'], ',', '"', '\\');
+            fputcsv($stream, ['LAPORAN PENDAPATAN GLOWCUT'], ',', '"', '\\');
+            fputcsv($stream, ['Periode', $startDate->format('d/m/Y'), 's.d.', $endDate->format('d/m/Y')], ',', '"', '\\');
+            fputcsv($stream, ['Dibuat pada', CarbonImmutable::now()->format('d/m/Y H:i')], ',', '"', '\\');
+            fputcsv($stream, [], ',', '"', '\\');
+            fputcsv($stream, ['RINGKASAN'], ',', '"', '\\');
+            fputcsv($stream, ['Pendapatan selesai (Rp)', $completedRevenue], ',', '"', '\\');
+            fputcsv($stream, ['Pendapatan Barbershop selesai (Rp)', $completedTransactions->where('category', 'barber')->sum('service_price')], ',', '"', '\\');
+            fputcsv($stream, ['Pendapatan MUA selesai (Rp)', $completedTransactions->where('category', 'mua')->sum('service_price')], ',', '"', '\\');
+            fputcsv($stream, ['Jumlah transaksi', $transactions->count()], ',', '"', '\\');
+            fputcsv($stream, ['Transaksi selesai', $completedTransactions->count()], ',', '"', '\\');
+            fputcsv($stream, ['Transaksi menunggu', $transactions->where('status', 'pending')->count()], ',', '"', '\\');
+            fputcsv($stream, [], ',', '"', '\\');
+            fputcsv($stream, ['No.', 'Tanggal', 'Waktu', 'Jenis', 'Pelanggan', 'Kategori', 'Layanan', 'Staff', 'Harga (Rp)', 'Status'], ',', '"', '\\');
+
+            foreach ($transactions->values() as $index => $transaction) {
+                $price = (int) ($transaction->service_price ?? 0);
+
+                fputcsv($stream, [
+                    $index + 1,
+                    $transaction->appointment_at?->format('Y-m-d') ?? '',
+                    $transaction->appointment_at?->format('H:i') ?? '',
+                    $transaction->cashier_id ? 'Walk-in' : 'Online',
+                    $this->spreadsheetText($transaction->customer_name),
+                    $transaction->category === 'mua' ? 'MUA' : 'Barbershop',
+                    $this->spreadsheetText($transaction->service_name),
+                    $this->spreadsheetText($transaction->staff_name),
+                    $price,
+                    ucfirst($transaction->status),
+                ], ',', '"', '\\');
+            }
+
+            fputcsv($stream, [], ',', '"', '\\');
+            fputcsv($stream, ['', '', '', '', '', '', 'TOTAL PENDAPATAN SELESAI (Rp)', $completedRevenue], ',', '"', '\\');
+            fclose($stream);
+        }, 'laporan-pendapatan_'.$startDate->toDateString().'_'.$endDate->toDateString().'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    private function spreadsheetText(?string $value): string
+    {
+        $value ??= '';
+
+        return preg_match('/^[\s]*[=+\-@]/u', $value) === 1 ? "'{$value}" : $value;
     }
 
     public function Barbershop()

@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5.3 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
         :root {
@@ -57,6 +57,14 @@
                 max-width: 720px;
                 padding: 1.75rem 1.5rem;
             }
+
+            .booking-card[role="button"] {
+                cursor: pointer;
+            }
+
+            .booking-card[role="button"]:focus-visible {
+                outline: 2px solid var(--gold-primary);
+                outline-offset: 3px;
         }
 
         @media (min-width: 992px) {
@@ -609,57 +617,61 @@
 
         <!-- Orders Queue List / Grid -->
         <main id="bookingList">
-            
-            @include('Kasir.partials.booking-card', [
-                'type' => 'barber',
-                'status' => 'menunggu',
-                'customerName' => 'Ahmad Rizky',
-                'bookingCode' => 'GC-X9K3PM2A',
-                'icon' => 'fa-scissors',
-                'service' => 'Haircut Classic',
-                'time' => '10:00',
-                'staff' => 'Budi S.',
-                'price' => 'Rp 82.500',
-            ])
 
-            @include('Kasir.partials.booking-card', [
-                'type' => 'barber',
-                'status' => 'menunggu',
-                'customerName' => 'Kevin Pratama',
-                'bookingCode' => 'GC-B2C3D4E5',
-                'icon' => 'fa-scissors',
-                'service' => 'Fade Cut',
-                'time' => '13:00',
-                'staff' => 'Dimas R.',
-                'price' => 'Rp 99.000',
-            ])
+            @foreach ($walkInBookings as $booking)
+                @include('Kasir.partials.booking-card', [
+                    'type' => $booking->category,
+                    'status' => match ($booking->status) {
+                        'confirmed', 'in_progress' => 'proses',
+                        'completed' => 'selesai',
+                        default => 'menunggu',
+                    },
+                    'customerName' => $booking->customer_name ?? 'Pelanggan online',
+                    'bookingCode' => ($booking->cashier_id ? 'WI-' : 'BK-') . $booking->id,
+                    'icon' => ($booking->category ?? 'barber') === 'mua' ? 'fa-wand-magic-sparkles' : 'fa-scissors',
+                    'service' => $booking->service_name ?? 'Layanan booking',
+                    'time' => $booking->appointment_at?->format('H:i') ?? '-',
+                    'staff' => $booking->staff_name ?? 'Belum ditentukan',
+                    'price' => $booking->service_price === null ? '-' : 'Rp ' . number_format($booking->service_price, 0, ',', '.'),
+                    'completeUrl' => route('kasir.booking.complete', $booking),
+                ])
+            @endforeach
 
-            @include('Kasir.partials.booking-card', [
-                'type' => 'barber',
-                'status' => 'selesai',
-                'customerName' => 'Bagas W.',
-                'bookingCode' => 'GC-J0K1L2M3',
-                'icon' => 'fa-scissors',
-                'service' => 'Haircut & Beard Trim',
-                'time' => '09:00',
-                'staff' => 'Budi S.',
-                'price' => 'Rp 120.000',
-            ])
-
-            @include('Kasir.partials.booking-card', [
-                'type' => 'mua',
-                'status' => 'selesai',
-                'hidden' => 'd-none',
-                'customerName' => 'Siti Nurhaliza',
-                'bookingCode' => 'GC-MUA9811',
-                'icon' => 'fa-wand-magic-sparkles',
-                'service' => 'Makeup Natural Wisuda',
-                'time' => '08:00',
-                'staff' => 'Anisa MUA',
-                'price' => 'Rp 350.000',
-            ])
+            @if ($walkInBookings->isEmpty())
+                <p class="text-center text-muted py-4">Belum ada booking hari ini.</p>
+            @endif
 
         </main>
+    </div>
+
+    <div class="modal fade" id="bookingDetailModal" tabindex="-1" aria-labelledby="bookingDetailTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background:#141418;border:1px solid var(--card-border);border-radius:1rem;color:#fff">
+                <div class="modal-header border-secondary">
+                    <div>
+                        <div class="header-sub">DETAIL BOOKING</div>
+                        <h2 class="modal-title fs-5" id="bookingDetailTitle"></h2>
+                        <div class="small text-muted" id="bookingDetailCode"></div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-0">
+                        <dt class="col-4 text-muted">Layanan</dt><dd class="col-8" id="bookingDetailService"></dd>
+                        <dt class="col-4 text-muted">Waktu</dt><dd class="col-8" id="bookingDetailTime"></dd>
+                        <dt class="col-4 text-muted">Staff</dt><dd class="col-8" id="bookingDetailStaff"></dd>
+                        <dt class="col-4 text-muted">Harga</dt><dd class="col-8" id="bookingDetailPrice"></dd>
+                        <dt class="col-4 text-muted">Status</dt><dd class="col-8" id="bookingDetailStatus"></dd>
+                    </dl>
+                    <form id="completeBookingForm" method="POST" class="mt-3">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-gold-action">Selesaikan Booking</button>
+                    </form>
+                    <div id="bookingAlreadyComplete" class="alert alert-success d-none mt-3 mb-0">Booking ini sudah selesai.</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -695,6 +707,24 @@
                 card.classList.toggle('d-none', !(matchesCategory && matchesStatus && matchesQuery));
             });
         }
+
+        function showBookingDetails(card) {
+            document.getElementById('bookingDetailTitle').textContent = card.dataset.customer;
+            document.getElementById('bookingDetailCode').textContent = card.dataset.code;
+            document.getElementById('bookingDetailService').textContent = card.dataset.service;
+            document.getElementById('bookingDetailTime').textContent = card.dataset.time;
+            document.getElementById('bookingDetailStaff').textContent = card.dataset.staff;
+            document.getElementById('bookingDetailPrice').textContent = card.dataset.price;
+            document.getElementById('bookingDetailStatus').textContent = card.dataset.status;
+            document.getElementById('completeBookingForm').action = card.dataset.completeUrl;
+
+            const isComplete = card.dataset.status === 'selesai';
+            document.getElementById('completeBookingForm').classList.toggle('d-none', isComplete);
+            document.getElementById('bookingAlreadyComplete').classList.toggle('d-none', !isComplete);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('bookingDetailModal')).show();
+        }
+
+        filterItems();
     </script>
 </body>
 </html>

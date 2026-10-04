@@ -401,7 +401,7 @@
 				<i class="fa-solid fa-circle-check fs-5"></i>
 				<div>
 					<strong class="d-block">Berhasil!</strong>
-					<span class="small">Pelanggan walk-in telah ditambahkan.</span>
+					<span class="small" id="walkInToastMessage">Pelanggan walk-in telah ditambahkan.</span>
 				</div>
 			</div>
 			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
@@ -420,25 +420,35 @@
 				<button type="button" class="walkin-close" onclick="hideWalkInModal()" aria-label="Tutup">&times;</button>
 			</div>
 			<div class="modal-body walkin-body">
-				<form id="walkInForm" onsubmit="addWalkInCustomer(event)">
+				<form id="walkInForm" method="POST" action="{{ route('kasir.booking.walkin.store') }}">
+					@csrf
+					@if ($errors->any())
+						<div class="alert alert-danger small py-2" role="alert">
+							<ul class="mb-0 ps-3">
+								@foreach ($errors->all() as $error)
+									<li>{{ $error }}</li>
+								@endforeach
+							</ul>
+						</div>
+					@endif
 					<div class="mb-3">
 						<label for="walkInCustomerName" class="form-label walkin-label">NAMA PELANGGAN</label>
-						<input id="walkInCustomerName" name="customer_name" type="text" required class="form-control walkin-input" placeholder="Masukkan nama">
+						<input id="walkInCustomerName" name="customer_name" value="{{ old('customer_name') }}" type="text" required maxlength="100" class="form-control walkin-input" placeholder="Masukkan nama">
 					</div>
 					<div class="mb-3">
 						<label for="walkInCategory" class="form-label walkin-label">KATEGORI LAYANAN</label>
-						<select id="walkInCategory" class="form-select walkin-input" onchange="updateWalkInServices()">
-							<option value="barber">Barbershop</option>
-							<option value="mua">MUA Wisuda</option>
+						<select id="walkInCategory" name="category" class="form-select walkin-input" onchange="updateWalkInServices(); updateWalkInStaff()">
+							<option value="barber" @selected(old('category', 'barber') === 'barber')>Barbershop</option>
+							<option value="mua" @selected(old('category') === 'mua')>MUA Wisuda</option>
 						</select>
 					</div>
 					<div class="mb-3">
 						<label for="walkInService" class="form-label walkin-label">PILIH LAYANAN</label>
-						<select id="walkInService" class="form-select walkin-input" required></select>
+						<select id="walkInService" name="service_name" class="form-select walkin-input" required></select>
 					</div>
 					<div class="mb-3">
-						<label for="walkInStaff" class="form-label walkin-label">KAPSTER / STAFF</label>
-						<input id="walkInStaff" type="text" required class="form-control walkin-input" placeholder="Nama kapster/MUA">
+						<label for="walkInStaff" class="form-label walkin-label">HAIR STYLIST / MUA ARTIST</label>
+						<select id="walkInStaff" name="staff_name" class="form-select walkin-input" required></select>
 					</div>
 					<div class="walkin-actions">
 						<button type="button" class="walkin-cancel" onclick="hideWalkInModal()">Batal</button>
@@ -451,33 +461,47 @@
 </div>
 
 <script>
-	const walkInServiceCatalog = {
-		barber: [
-			{ name: 'Fast Haircut', price: 25000 },
-			{ name: 'Rileks Ganteng', price: 35000 },
-			{ name: 'Full Grooming', price: 50000 }
-		],
-		mua: [
-			{ name: 'Makeup Only', price: 250000 },
-			{ name: 'Make Up + Soft Lens', price: 300000 },
-			{ name: 'Make Up + Hijab/Hair Do', price: 320000 },
-			{ name: 'Make Up + Hijab/Hair Do + Soft Lens', price: 360000 }
-		]
-	};
+	const walkInServiceCatalog = @json($walkInServiceCatalog);
+	const walkInEmployees = @json($employees);
 
-	function updateWalkInServices() {
+	function updateWalkInServices(selectedService = '') {
 		const category = document.getElementById('walkInCategory').value;
 		const serviceSelect = document.getElementById('walkInService');
 		const services = walkInServiceCatalog[category] || [];
 
 		serviceSelect.replaceChildren();
-		services.forEach(service => {
+		Object.entries(services).forEach(([serviceName, price]) => {
 			const option = new Option(
-				`${service.name} - Rp ${new Intl.NumberFormat('id-ID').format(service.price)}`,
-				service.name
+				`${serviceName} - Rp ${new Intl.NumberFormat('id-ID').format(price)}`,
+				serviceName
 			);
-			option.dataset.price = String(service.price);
+			option.dataset.price = String(price);
+			option.selected = serviceName === selectedService;
 			serviceSelect.add(option);
+		});
+	}
+
+	function updateWalkInStaff(selectedStaff = '') {
+		const category = document.getElementById('walkInCategory').value;
+		const staffSelect = document.getElementById('walkInStaff');
+		const requiredPosition = category === 'mua' ? 'MUA Artist' : 'Hair Stylist';
+		const eligibleEmployees = walkInEmployees.filter(employee => employee.position === requiredPosition);
+
+		staffSelect.replaceChildren();
+		staffSelect.disabled = eligibleEmployees.length === 0;
+
+		const placeholder = new Option(
+			eligibleEmployees.length ? 'Pilih karyawan' : 'Belum ada karyawan terdaftar',
+			''
+		);
+		placeholder.disabled = true;
+		placeholder.selected = !selectedStaff;
+		staffSelect.add(placeholder);
+
+		eligibleEmployees.forEach(employee => {
+			const option = new Option(employee.name, employee.name);
+			option.selected = employee.name === selectedStaff;
+			staffSelect.add(option);
 		});
 	}
 
@@ -498,19 +522,6 @@
 		document.body.classList.remove('walkin-open');
 	}
 
-	function addWalkInCustomer(event) {
-		event.preventDefault();
-		hideWalkInModal();
-
-		const toastEl = document.getElementById('walkInToast');
-		if (toastEl && window.bootstrap && window.bootstrap.Toast) {
-			new bootstrap.Toast(toastEl).show();
-		} else if (toastEl) {
-			toastEl.classList.add('show');
-			window.setTimeout(() => toastEl.classList.remove('show'), 3000);
-		}
-	}
-
 	document.addEventListener('keydown', event => {
 		if (event.key === 'Escape' && document.getElementById('walkInModal').classList.contains('show')) {
 			hideWalkInModal();
@@ -523,7 +534,17 @@
 		}
 	});
 
-	updateWalkInServices();
+	updateWalkInServices(@json(old('service_name')));
+	updateWalkInStaff(@json(old('staff_name')));
+
+	@if ($errors->any())
+		showWalkInModal();
+	@endif
+
+	@if (session('success'))
+		document.getElementById('walkInToastMessage').textContent = @json(session('success'));
+		bootstrap.Toast.getOrCreateInstance(document.getElementById('walkInToast')).show();
+	@endif
 </script>
 </body>
 </html>

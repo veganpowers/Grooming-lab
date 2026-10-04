@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bookings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('service_id')->constrained()->restrictOnDelete();
-            $table->dateTime('appointment_at');
-            $table->string('status')->default('pending');
-            $table->text('notes')->nullable();
-            $table->timestamps();
+        if (! Schema::hasTable('bookings')) {
+            Schema::create('bookings', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('service_id')->nullable()->constrained()->nullOnDelete();
+                $table->dateTime('appointment_at');
+                $table->string('status')->default('pending');
+                $table->text('notes')->nullable();
+                $table->timestamps();
 
-            $table->index(['appointment_at', 'status']);
-        });
+                $table->index(['appointment_at', 'status']);
+            });
+        }
     }
 
     /**
@@ -29,6 +31,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bookings');
+        if (Schema::hasTable('bookings') && Schema::hasColumn('bookings', 'user_id')) {
+            Schema::dropIfExists('bookings');
+        }
     }
 };

@@ -57,6 +57,45 @@
             min-width: 150px;
         }
 
+        .report-range-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .report-date-fields {
+            display: grid;
+            flex: 1 1 320px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .report-date-fields label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .report-date-input {
+            width: 100%;
+            min-height: 42px;
+            margin-top: 0.35rem;
+            border: 1px solid var(--card-border);
+            border-radius: 0.55rem;
+            background: #19191f;
+            color: #fff;
+            color-scheme: dark;
+            padding: 0.5rem 0.65rem;
+        }
+
+        .report-range-error {
+            width: 100%;
+            color: #f87171;
+            font-size: 0.78rem;
+        }
+
         .report-category-btn {
             border-color: var(--card-border);
             color: var(--text-muted);
@@ -127,6 +166,10 @@
         }
 
         @media (max-width: 575.98px) {
+            .report-date-fields {
+                grid-template-columns: 1fr;
+            }
+
             .report-list-heading,
             .report-transaction {
                 grid-template-columns: 3.5rem minmax(0, 1fr) auto;
@@ -152,22 +195,39 @@
         ])
 
         <section class="report-total p-3 p-md-4 mb-3">
-            <div class="small text-muted mb-1">Pendapatan Bulan Ini</div>
-            <div class="h3 fw-bold text-gold mb-2">Rp 74.800.000</div>
+            <div class="small text-muted mb-1">Pendapatan Selesai · {{ $startDate }} s.d. {{ $endDate }}</div>
+            <div class="h3 fw-bold text-gold mb-2">Rp {{ number_format($reportTotal, 0, ',', '.') }}</div>
             <div class="d-flex flex-wrap gap-3 small">
-                <span class="text-muted">Barbershop <strong class="text-white ms-1">Rp 48.200.000</strong></span>
-                <span class="text-muted">MUA <strong class="text-white ms-1">Rp 26.600.000</strong></span>
+                <span class="text-muted">Barbershop <strong class="text-white ms-1">Rp {{ number_format($barberTotal, 0, ',', '.') }}</strong></span>
+                <span class="text-muted">MUA <strong class="text-white ms-1">Rp {{ number_format($muaTotal, 0, ',', '.') }}</strong></span>
             </div>
         </section>
 
         <section class="panel p-3 p-md-4">
+            @if ($errors->any())
+                <div class="alert alert-danger small" role="alert">
+                    <ul class="mb-0 ps-3">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form id="reportFilterForm" class="report-range-form" method="GET" action="{{ route('admin.laporan') }}" onsubmit="return validateReportRange('filterStartDate', 'filterEndDate', 'filterRangeError')">
+                <div class="report-date-fields">
+                    <label for="filterStartDate">Dari tanggal
+                        <input id="filterStartDate" class="report-date-input" type="date" name="start_date" value="{{ old('start_date', $startDate) }}" max="{{ $today }}" required>
+                    </label>
+                    <label for="filterEndDate">Sampai tanggal
+                        <input id="filterEndDate" class="report-date-input" type="date" name="end_date" value="{{ old('end_date', $endDate) }}" max="{{ $today }}" required>
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-outline-light">Terapkan Filter</button>
+                <div id="filterRangeError" class="report-range-error" role="alert"></div>
+            </form>
+
             <div class="report-filters d-flex flex-wrap align-items-center gap-2 mb-3">
-                <label class="visually-hidden" for="reportDateFilter">Filter tanggal</label>
-                <select id="reportDateFilter" class="form-select bg-dark text-white border-secondary" onchange="filterReportTransactions()">
-                    <option value="all">Semua Tanggal</option>
-                    <option value="2026-09-15">15 Sep</option>
-                    <option value="2026-09-14">14 Sep</option>
-                </select>
                 <div class="btn-group" role="group" aria-label="Filter kategori laporan">
                     <button type="button" class="btn report-category-btn active" data-category="all" aria-pressed="true" onclick="filterReportTransactions('all')">Semua</button>
                     <button type="button" class="btn report-category-btn" data-category="barber" aria-pressed="false" onclick="filterReportTransactions('barber')">Barber</button>
@@ -177,62 +237,58 @@
 
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h2 class="h6 text-white fw-bold mb-0">Tabel Pemasukan</h2>
-                <span class="small text-muted" id="reportTransactionCount">8 transaksi pratinjau</span>
+                <span class="small text-muted" id="reportTransactionCount">{{ $transactions->count() }} transaksi</span>
             </div>
             <div class="report-list" id="reportTransactionList">
                 <div class="report-list-heading"><span>Tanggal</span><span>Layanan</span><span class="text-end">Nominal</span></div>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>10:15</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge">Booking</span>Haircut Classic</div><div class="report-service-meta">Budi Santoso</div></div>
-                    <div class="report-amount">Rp 82.000</div>
-                </article>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>10:45</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge walkin">Walk-in</span>Shaving Premium</div><div class="report-service-meta">Wahyu · Dimas R.</div></div>
-                    <div class="report-amount">Rp 55.000</div>
-                </article>
-                <article class="report-transaction" data-category="mua" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>11:30</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge">Booking</span>MUA Natural Wisuda</div><div class="report-service-meta">Sari D. · Rina A.</div></div>
-                    <div class="report-amount">Rp 385.000</div>
-                </article>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>12:00</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge walkin">Walk-in</span>Fade Cut</div><div class="report-service-meta">Wahyu · Budi S.</div></div>
-                    <div class="report-amount">Rp 99.000</div>
-                </article>
-                <article class="report-transaction" data-category="mua" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>13:15</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge">Booking</span>Paket Hijab + Makeup</div><div class="report-service-meta">Nadia P. · Rina A.</div></div>
-                    <div class="report-amount">Rp 495.000</div>
-                </article>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>14:00</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge">Booking</span>Hair Coloring</div><div class="report-service-meta">Fajar A. · Dimas R.</div></div>
-                    <div class="report-amount">Rp 275.000</div>
-                </article>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-15">
-                    <div class="report-date-time">15 Sep<br>14:30</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge walkin">Walk-in</span>Creambath</div><div class="report-service-meta">Wahyu · Yoga P.</div></div>
-                    <div class="report-amount">Rp 61.000</div>
-                </article>
-                <article class="report-transaction" data-category="barber" data-date="2026-09-14">
-                    <div class="report-date-time">14 Sep<br>16:20</div>
-                    <div class="min-w-0"><div class="report-service-name"><span class="report-type-badge">Booking</span>Haircut &amp; Beard Trim</div><div class="report-service-meta">Rizky M. · Budi S.</div></div>
-                    <div class="report-amount">Rp 120.000</div>
-                </article>
+                @forelse ($transactions as $transaction)
+                    <article class="report-transaction" data-category="{{ $transaction->category ?? 'barber' }}">
+                        <div class="report-date-time">{{ $transaction->appointment_at?->format('d/m/Y') }}<br>{{ $transaction->appointment_at?->format('H:i') }}</div>
+                        <div class="min-w-0">
+                            <div class="report-service-name"><span class="report-type-badge {{ $transaction->cashier_id ? 'walkin' : '' }}">{{ $transaction->cashier_id ? 'Walk-in' : 'Online' }}</span>{{ $transaction->service_name ?? 'Layanan booking' }}</div>
+                            <div class="report-service-meta">{{ $transaction->customer_name ?? 'Pelanggan online' }} · {{ $transaction->staff_name ?? 'Staff belum ditentukan' }} · {{ ucfirst($transaction->status) }}</div>
+                        </div>
+                        <div class="report-amount">Rp {{ number_format($transaction->service_price ?? 0, 0, ',', '.') }}</div>
+                    </article>
+                @empty
+                    <div class="text-center text-muted small py-4">Tidak ada transaksi pada rentang tanggal ini.</div>
+                @endforelse
             </div>
-            <div class="d-none text-center text-muted small py-4" id="reportEmptyState">Tidak ada transaksi untuk filter ini.</div>
-            <div class="small text-muted mt-2">Data contoh untuk pratinjau laporan.</div>
-            <button type="button" class="btn btn-warning fw-bold mt-3" onclick="downloadReport()">
-                <i class="fa-solid fa-file-arrow-down me-2"></i>Unduh Laporan PDF
+            <button type="button" class="btn btn-warning fw-bold mt-3" data-bs-toggle="modal" data-bs-target="#exportReportModal">
+                <i class="fa-solid fa-file-excel me-2"></i>Unduh Excel
             </button>
         </section>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="reportToast" class="toast text-bg-success border-0" role="status" aria-live="polite">
-            <div class="d-flex"><div class="toast-body" id="reportToastMessage"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Tutup"></button></div>
+    <div class="modal fade" id="exportReportModal" tabindex="-1" aria-labelledby="exportReportTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content panel text-white">
+                <div class="modal-header border-secondary">
+                    <div>
+                        <div class="small text-gold fw-bold">EXPORT SPREADSHEET</div>
+                        <h2 class="modal-title fs-5" id="exportReportTitle">Pilih Periode Excel</h2>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <form method="GET" action="{{ route('admin.laporan.export') }}" onsubmit="return validateReportRange('exportStartDate', 'exportEndDate', 'exportRangeError')">
+                    <div class="modal-body">
+                        <div class="report-date-fields">
+                            <label for="exportStartDate">Dari tanggal
+                                <input id="exportStartDate" class="report-date-input" type="date" name="start_date" value="{{ old('start_date', $startDate) }}" max="{{ $today }}" required>
+                            </label>
+                            <label for="exportEndDate">Sampai tanggal
+                                <input id="exportEndDate" class="report-date-input" type="date" name="end_date" value="{{ old('end_date', $endDate) }}" max="{{ $today }}" required>
+                            </label>
+                        </div>
+                        <div id="exportRangeError" class="report-range-error mt-2" role="alert"></div>
+                        <div class="small text-muted mt-2">Maksimal 31 hari, termasuk tanggal awal dan akhir.</div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-warning fw-bold"><i class="fa-solid fa-download me-2"></i>Unduh CSV Excel</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -250,29 +306,40 @@
                 button.setAttribute('aria-pressed', String(isActive));
             });
 
-            const selectedDate = document.getElementById('reportDateFilter').value;
             let visibleTransactions = 0;
 
             document.querySelectorAll('.report-transaction').forEach((transaction) => {
                 const matchesCategory = reportCategoryFilter === 'all' || transaction.dataset.category === reportCategoryFilter;
-                const matchesDate = selectedDate === 'all' || transaction.dataset.date === selectedDate;
-                const isVisible = matchesCategory && matchesDate;
+                const isVisible = matchesCategory;
 
                 transaction.classList.toggle('d-none', !isVisible);
                 visibleTransactions += isVisible ? 1 : 0;
             });
 
-            document.getElementById('reportTransactionCount').textContent = `${visibleTransactions} transaksi pratinjau`;
-            document.getElementById('reportEmptyState').classList.toggle('d-none', visibleTransactions > 0);
+            document.getElementById('reportTransactionCount').textContent = `${visibleTransactions} transaksi`;
         }
 
-        function downloadReport() {
-            const toastElement = document.getElementById('reportToast');
-            document.getElementById('reportToastMessage').textContent = 'Laporan pendapatan PDF sedang diunduh.';
+        function validateReportRange(startId, endId, errorId) {
+            const startValue = document.getElementById(startId).value;
+            const endValue = document.getElementById(endId).value;
+            const errorElement = document.getElementById(errorId);
 
-            if (window.bootstrap && window.bootstrap.Toast) {
-                window.bootstrap.Toast.getOrCreateInstance(toastElement).show();
+            errorElement.textContent = '';
+            if (!startValue || !endValue) {
+                errorElement.textContent = 'Pilih tanggal awal dan akhir.';
+                return false;
             }
+
+            const start = new Date(`${startValue}T00:00:00Z`);
+            const end = new Date(`${endValue}T00:00:00Z`);
+            const days = Math.floor((end - start) / 86400000) + 1;
+
+            if (days < 1 || days > 31) {
+                errorElement.textContent = 'Rentang tanggal maksimal 31 hari.';
+                return false;
+            }
+
+            return true;
         }
     </script>
 </body>

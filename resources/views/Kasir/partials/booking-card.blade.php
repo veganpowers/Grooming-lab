@@ -1,4 +1,4 @@
-<div class="booking-card {{ $type ?? 'barber' }}-item status-{{ $status ?? 'menunggu' }} {{ $hidden ?? '' }}" data-category="{{ $type ?? 'barber' }}" data-status="{{ $status ?? 'menunggu' }}">
+<div class="booking-card {{ $type ?? 'barber' }}-item status-{{ $status ?? 'menunggu' }} {{ $hidden ?? '' }}" data-category="{{ $type ?? 'barber' }}" data-status="{{ $status ?? 'menunggu' }}" @isset($completeUrl) role="button" tabindex="0" aria-haspopup="dialog" data-customer="{{ $customerName }}" data-code="{{ $bookingCode }}" data-service="{{ $service }}" data-time="{{ $time }}" data-staff="{{ $staff }}" data-price="{{ $price }}" data-complete-url="{{ $completeUrl }}" onclick="showBookingDetails(this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showBookingDetails(this); }" @endisset>
     <div>
         <div class="d-flex justify-content-between align-items-start">
             <div>

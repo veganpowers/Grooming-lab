@@ -120,6 +120,10 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
+        .employee-list-item + .employee-list-item {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
         .employee-avatar-initial {
             display: grid;
             width: 2.4rem;
@@ -153,6 +157,33 @@
             height: 0.55rem;
             border-radius: 50%;
             background: #43d59a;
+        }
+
+        .employee-edit-details {
+            padding: 0 1rem 0.75rem;
+        }
+
+        .employee-edit-details summary {
+            width: fit-content;
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 700;
+            list-style: none;
+        }
+
+        .employee-edit-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .employee-edit-form {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 0.65rem;
+            background: #1d1f24;
         }
 
         .employee-create-form {
@@ -227,62 +258,95 @@
         </header>
 
         <main class="blank-admin-content">
+            @if (session('success'))
+                <div class="alert alert-success" role="status">{{ session('success') }}</div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0 ps-3">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="employee-account-list" id="employeeAccountList" aria-label="Daftar karyawan aktif">
-                <div class="employee-account-row">
-                    <span class="employee-avatar-initial" aria-hidden="true">B</span>
-                    <div class="employee-account-details">
-                        <div class="employee-account-name">Budi Santoso</div>
-                        <div class="employee-account-meta">Senior Barber</div>
+                @forelse ($employees as $employee)
+                    <div class="employee-list-item">
+                        <div class="employee-account-row">
+                            <span class="employee-avatar-initial" aria-hidden="true">{{ strtoupper(substr($employee->name, 0, 1)) }}</span>
+                            <div class="employee-account-details">
+                                <div class="employee-account-name">{{ $employee->name }}</div>
+                                <div class="employee-account-meta">{{ $employee->position }}</div>
+                                <div class="employee-account-meta">{{ $employee->user?->email ?? 'Profil staff' }}</div>
+                            </div>
+                            <span class="employee-account-status" role="img" aria-label="Aktif"></span>
+                        </div>
+                        <details class="employee-edit-details">
+                            <summary><i class="fa-solid fa-pen-to-square me-1" aria-hidden="true"></i>Edit</summary>
+                            <form class="employee-edit-form" method="POST" action="{{ route('admin.karyawan.update', $employee) }}">
+                                @csrf
+                                @method('PUT')
+                                <div>
+                                    <label for="employeeName{{ $employee->id }}" class="form-label">Nama Lengkap</label>
+                                    <input type="text" id="employeeName{{ $employee->id }}" name="name" value="{{ $employee->name }}" required maxlength="100" class="form-control">
+                                </div>
+                                <div>
+                                    <label for="employeePosition{{ $employee->id }}" class="form-label">Peran / Posisi</label>
+                                    <select id="employeePosition{{ $employee->id }}" name="position" class="form-select" required>
+                                        @foreach ($positions as $position)
+                                            <option value="{{ $position }}" @selected($employee->position === $position)>{{ $position }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn employee-submit">Simpan Perubahan</button>
+                            </form>
+                            <form class="mt-2" method="POST" action="{{ route('admin.karyawan.destroy', $employee) }}" onsubmit="return confirm('Hapus akun dan profil {{ $employee->name }}?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger w-100">
+                                    <i class="fa-solid fa-trash-can me-2" aria-hidden="true"></i>{{ $employee->user ? 'Hapus Akun Karyawan' : 'Hapus Profil Karyawan' }}
+                                </button>
+                            </form>
+                        </details>
                     </div>
-                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
-                </div>
-                <div class="employee-account-row">
-                    <span class="employee-avatar-initial" aria-hidden="true">R</span>
-                    <div class="employee-account-details">
-                        <div class="employee-account-name">Rina Andini</div>
-                        <div class="employee-account-meta">MUA Artist</div>
-                    </div>
-                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
-                </div>
-                <div class="employee-account-row">
-                    <span class="employee-avatar-initial" aria-hidden="true">D</span>
-                    <div class="employee-account-details">
-                        <div class="employee-account-name">Dimas Rizky</div>
-                        <div class="employee-account-meta">Junior Barber</div>
-                    </div>
-                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
-                </div>
+                @empty
+                    <div class="employee-account-row text-muted">Belum ada data karyawan.</div>
+                @endforelse
             </div>
 
             <button type="button" class="employee-add-toggle" id="employeeFormToggle" aria-expanded="true" aria-controls="employeeCreateForm" onclick="toggleEmployeeForm()">
                 <i class="fa-solid fa-plus me-2" aria-hidden="true"></i><span id="employeeFormToggleText">Tambah Karyawan</span>
             </button>
 
-            <form class="employee-create-form" id="employeeCreateForm" onsubmit="handleAddEmployee(event)">
+            <form class="employee-create-form" id="employeeCreateForm" method="POST" action="{{ route('admin.karyawan.store') }}">
+                @csrf
                 <div class="mb-3">
                     <label for="newEmpName" class="form-label">Nama Lengkap</label>
-                    <input type="text" id="newEmpName" required class="form-control" placeholder="Contoh: Rina Andini" autocomplete="name">
+                    <input type="text" id="newEmpName" name="name" value="{{ old('name') }}" required maxlength="100" class="form-control" placeholder="Contoh: Rina Andini" autocomplete="name">
                 </div>
                 <div class="mb-3">
                     <label for="newEmpUsername" class="form-label">Username</label>
-                    <input type="text" id="newEmpUsername" required class="form-control" placeholder="Contoh: rina.andini" autocomplete="username">
+                    <input type="text" id="newEmpUsername" name="username" value="{{ old('username') }}" required minlength="3" maxlength="50" pattern="[A-Za-z0-9._-]+" class="form-control" placeholder="Contoh: rina.andini" autocomplete="username">
                 </div>
                 <div class="mb-3">
                     <label for="newEmpPassword" class="form-label">Password</label>
-                    <input type="password" id="newEmpPassword" required minlength="8" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                    <input type="password" id="newEmpPassword" name="password" required minlength="8" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
                 </div>
                 <div class="mb-3">
                     <label for="newEmpPasswordConfirm" class="form-label">Ulangi Password</label>
-                    <input type="password" id="newEmpPasswordConfirm" required minlength="8" class="form-control" placeholder="Ulangi password" autocomplete="new-password">
+                    <input type="password" id="newEmpPasswordConfirm" name="password_confirmation" required minlength="8" class="form-control" placeholder="Ulangi password" autocomplete="new-password">
                 </div>
                 <div class="mb-3">
                     <label for="newEmpRole" class="form-label">Peran / Posisi</label>
-                    <select id="newEmpRole" class="form-select">
-                        <option value="MUA Artist">MUA Artist</option>
-                        <option value="Hair Stylist">Hair Stylist</option>
+                    <select id="newEmpRole" name="position" class="form-select" required>
+                        @foreach ($positions as $position)
+                            <option value="{{ $position }}" @selected(old('position') === $position)>{{ $position }}</option>
+                        @endforeach
                     </select>
                 </div>
-                <div class="small text-danger mb-3" id="employeeFormError" role="alert"></div>
                 <button type="submit" class="btn employee-submit w-100">
                     <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Buat Akun Karyawan
                 </button>
@@ -301,56 +365,6 @@
             document.getElementById('employeeFormToggleText').textContent = isExpanded ? 'Tambah Karyawan' : 'Tutup Form';
         }
 
-        function handleAddEmployee(event) {
-            event.preventDefault();
-
-            const nameInput = document.getElementById('newEmpName');
-            const usernameInput = document.getElementById('newEmpUsername');
-            const passwordInput = document.getElementById('newEmpPassword');
-            const confirmInput = document.getElementById('newEmpPasswordConfirm');
-            const roleInput = document.getElementById('newEmpRole');
-            const feedback = document.getElementById('employeeFormError');
-            const name = nameInput.value.trim();
-
-            if (passwordInput.value !== confirmInput.value) {
-                feedback.textContent = 'Password dan konfirmasi password tidak cocok.';
-                confirmInput.focus();
-                return;
-            }
-
-            const row = document.createElement('div');
-            row.className = 'employee-account-row';
-
-            const initial = document.createElement('span');
-            initial.className = 'employee-avatar-initial';
-            initial.setAttribute('aria-hidden', 'true');
-            initial.textContent = name.charAt(0).toUpperCase();
-
-            const details = document.createElement('div');
-            details.className = 'employee-account-details';
-
-            const employeeName = document.createElement('div');
-            employeeName.className = 'employee-account-name';
-            employeeName.textContent = name;
-
-            const employeeMeta = document.createElement('div');
-            employeeMeta.className = 'employee-account-meta';
-            employeeMeta.textContent = `${usernameInput.value.trim()} · ${roleInput.value}`;
-
-            const status = document.createElement('span');
-            status.className = 'employee-account-status';
-            status.setAttribute('role', 'img');
-            status.setAttribute('aria-label', 'Aktif');
-
-            details.append(employeeName, employeeMeta);
-            row.append(initial, details, status);
-            document.getElementById('employeeAccountList').prepend(row);
-
-            event.currentTarget.reset();
-            feedback.textContent = `${name} ditambahkan ke daftar pada halaman ini.`;
-            feedback.classList.remove('text-danger');
-            feedback.classList.add('text-success');
-        }
     </script>
 </body>
 </html>

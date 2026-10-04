@@ -102,7 +102,70 @@ class DashboardController extends Controller
 
     public function admin()
     {
-        return view('Admin.Dashboard');
+        $today = CarbonImmutable::today();
+        $monthStart = $today->startOfMonth();
+        $todayBookings = Booking::query()->whereDate('appointment_at', $today);
+        $todayWalkIns = Booking::query()
+            ->whereDate('appointment_at', $today)
+            ->whereNotNull('cashier_id');
+
+        $weeklyDays = collect(range(6, 0))->map(function (int $daysAgo) use ($today): array {
+            $date = $today->subDays($daysAgo);
+            $revenue = Booking::query()
+                ->whereDate('appointment_at', $date)
+                ->where('status', 'completed')
+                ->sum('service_price');
+
+            return [
+                'date' => $date,
+                'label' => [1 => 'Sen', 2 => 'Sel', 3 => 'Rab', 4 => 'Kam', 5 => 'Jum', 6 => 'Sab', 7 => 'Min'][$date->dayOfWeekIso],
+                'revenue' => (int) $revenue,
+                'isToday' => $date->isSameDay($today),
+            ];
+        });
+        $maxDailyRevenue = max(1, $weeklyDays->max('revenue'));
+        $weeklyDays = $weeklyDays->map(function (array $day) use ($maxDailyRevenue): array {
+            $day['barHeight'] = $day['revenue'] > 0 ? max(12, (int) round($day['revenue'] / $maxDailyRevenue * 100)) : 4;
+
+            return $day;
+        });
+
+        $completedServiceCounts = Booking::query()
+            ->where('status', 'completed')
+            ->selectRaw('staff_name, COUNT(*) as completed_count')
+            ->groupBy('staff_name')
+            ->pluck('completed_count', 'staff_name');
+        $employees = Employee::query()
+            ->orderBy('name')
+            ->get()
+            ->map(function (Employee $employee) use ($completedServiceCounts): Employee {
+                $employee->setAttribute('completed_service_count', (int) $completedServiceCounts->get($employee->name, 0));
+
+                return $employee;
+            });
+
+        $monthRevenue = Booking::query()
+            ->where('status', 'completed')
+            ->whereBetween('appointment_at', [$monthStart->startOfDay(), $today->endOfDay()])
+            ->sum('service_price');
+
+        return view('Admin.Dashboard', [
+            'dashboardDate' => $today->locale('id')->translatedFormat('l, d F Y'),
+            'monthStartLabel' => $monthStart->format('d/m/Y'),
+            'monthEndLabel' => $today->format('d/m/Y'),
+            'monthRevenue' => (int) $monthRevenue,
+            'todayBookingCount' => $todayBookings->count(),
+            'todayPendingCount' => (clone $todayBookings)->where('status', 'pending')->count(),
+            'todayInProgressCount' => (clone $todayBookings)->whereIn('status', ['confirmed', 'in_progress'])->count(),
+            'todayWalkInCount' => (clone $todayWalkIns)->count(),
+            'todayWalkInRevenue' => (int) (clone $todayWalkIns)->where('status', 'completed')->sum('service_price'),
+            'employeeCount' => $employees->count(),
+            'weeklyRevenue' => (int) $weeklyDays->sum('revenue'),
+            'weeklyStartLabel' => $today->subDays(6)->format('d/m'),
+            'weeklyEndLabel' => $today->format('d/m'),
+            'weeklyDays' => $weeklyDays,
+            'employees' => $employees,
+        ]);
     }
 
     public function kelolaKaryawan()

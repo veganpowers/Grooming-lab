@@ -322,6 +322,18 @@
             border: 1px solid #333342;
         }
 
+        .avatar-initial {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            place-items: center;
+            border: 1px solid #333342;
+            border-radius: 50%;
+            background: #382957;
+            color: #c7a6ff;
+            font-weight: 800;
+        }
+
         .status-dot-active {
             position: absolute;
             bottom: 1px;
@@ -814,7 +826,7 @@
             <div>
                 <div class="header-sub">GLOWCUT &nbsp;•&nbsp; ADMIN PANEL</div>
                 <h1 class="header-title font-serif">Dashboard Admin</h1>
-                <div class="header-date">Kamis, 24 September 2026</div>
+                <div class="header-date">{{ $dashboardDate }}</div>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn-circle-icon" title="Notifikasi" onclick="showNotification()">
@@ -837,9 +849,9 @@
                         </div>
                     </div>
                     <div>
-                        <div class="stat-val val-gold">Rp 18.4jt</div>
+                        <div class="stat-val val-gold">Rp {{ number_format($monthRevenue, 0, ',', '.') }}</div>
                         <div class="stat-lbl">Total Pendapatan</div>
-                        <div class="stat-subtext">+12% vs minggu lalu</div>
+                        <div class="stat-subtext">{{ $monthStartLabel }} s.d. {{ $monthEndLabel }}</div>
                     </div>
                 </div>
             </div>
@@ -854,9 +866,9 @@
                         </div>
                     </div>
                     <div>
-                        <div class="stat-val val-cyan">24</div>
+                        <div class="stat-val val-cyan">{{ $todayBookingCount }}</div>
                         <div class="stat-lbl">Booking Hari Ini</div>
-                        <div class="stat-subtext">6 menunggu · 3 proses</div>
+                        <div class="stat-subtext">{{ $todayPendingCount }} menunggu · {{ $todayInProgressCount }} proses</div>
                     </div>
                 </div>
             </div>
@@ -871,9 +883,9 @@
                         </div>
                     </div>
                     <div>
-                        <div class="stat-val val-purple">9</div>
+                        <div class="stat-val val-purple">{{ $todayWalkInCount }}</div>
                         <div class="stat-lbl">Walk-in Hari Ini</div>
-                        <div class="stat-subtext">Rp 1.2jt dari walk-in</div>
+                        <div class="stat-subtext">Rp {{ number_format($todayWalkInRevenue, 0, ',', '.') }} selesai</div>
                     </div>
                 </div>
             </div>
@@ -888,9 +900,9 @@
                         </div>
                     </div>
                     <div>
-                        <div class="stat-val val-pink">8</div>
+                        <div class="stat-val val-pink">{{ $employeeCount }}</div>
                         <div class="stat-lbl">Total Karyawan</div>
-                        <div class="stat-subtext">6 aktif hari ini</div>
+                        <div class="stat-subtext">Terdaftar di database</div>
                     </div>
                 </div>
             </div>
@@ -914,55 +926,21 @@
         <section class="revenue-chart-card mb-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h6 fw-bold text-white mb-0">Pendapatan Minggu Ini</h2>
-                <div class="fw-extrabold text-gold fs-6">Rp 5.3jt</div>
+                <div class="fw-extrabold text-gold fs-6">Rp {{ number_format($weeklyRevenue, 0, ',', '.') }}</div>
             </div>
 
             <!-- Bar Chart Display -->
             <div class="d-flex justify-content-between align-items-end pt-2 pb-1 px-1">
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 35%;"></div>
+                @foreach ($weeklyDays as $day)
+                    <div class="chart-day-col {{ $day['isToday'] ? 'active' : '' }}" title="{{ $day['date']->format('d/m/Y') }} · Rp {{ number_format($day['revenue'], 0, ',', '.') }}">
+                        <div class="chart-bar-bg">
+                            <div class="chart-bar-fill" style="height: {{ $day['barHeight'] }}%;"></div>
+                        </div>
+                        <span class="chart-day-label">{{ $day['label'] }}</span>
                     </div>
-                    <span class="chart-day-label">Sen</span>
-                </div>
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 50%;"></div>
-                    </div>
-                    <span class="chart-day-label">Sel</span>
-                </div>
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 65%;"></div>
-                    </div>
-                    <span class="chart-day-label">Rab</span>
-                </div>
-                <!-- Active Day (Kamis) -->
-                <div class="chart-day-col active">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 90%;"></div>
-                    </div>
-                    <span class="chart-day-label">Kam</span>
-                </div>
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 40%;"></div>
-                    </div>
-                    <span class="chart-day-label">Jum</span>
-                </div>
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 75%;"></div>
-                    </div>
-                    <span class="chart-day-label">Sab</span>
-                </div>
-                <div class="chart-day-col">
-                    <div class="chart-bar-bg">
-                        <div class="chart-bar-fill" style="height: 60%;"></div>
-                    </div>
-                    <span class="chart-day-label">Min</span>
-                </div>
+                @endforeach
             </div>
+            <div class="small text-muted text-center mt-2">{{ $weeklyStartLabel }} – {{ $weeklyEndLabel }} · Pendapatan booking selesai</div>
         </section>
 
         <section>
@@ -974,61 +952,26 @@
             </div>
 
             <div class="d-flex flex-column gap-2" id="employeeListContainer">
-                
-                <!-- Staff 1 -->
-                <div class="employee-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-wrapper">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Budi Santoso" class="avatar-img">
-                            <span class="status-dot-active"></span>
+                @forelse ($employees as $employee)
+                    <div class="employee-card">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-wrapper">
+                                <span class="avatar-initial" aria-hidden="true">{{ strtoupper(substr($employee->name, 0, 1)) }}</span>
+                                <span class="status-dot-active"></span>
+                            </div>
+                            <div>
+                                <div class="emp-name">{{ $employee->name }}</div>
+                                <div class="{{ $employee->position === 'MUA Artist' ? 'emp-role-mua' : 'emp-role-barber' }}">{{ $employee->position }}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="emp-name">Budi Santoso</div>
-                            <div class="emp-role-barber">Senior Barber</div>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="emp-stats-num">28 layanan</div>
-                        <div class="emp-status-badge">Aktif</div>
-                    </div>
-                </div>
-
-                <!-- Staff 2 -->
-                <div class="employee-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-wrapper">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Rina Andini" class="avatar-img">
-                            <span class="status-dot-active"></span>
-                        </div>
-                        <div>
-                            <div class="emp-name">Rina Andini</div>
-                            <div class="emp-role-mua">MUA Artist</div>
+                        <div class="text-end">
+                            <div class="emp-stats-num">{{ $employee->completed_service_count }} layanan selesai</div>
+                            <div class="emp-status-badge">Terdaftar</div>
                         </div>
                     </div>
-                    <div class="text-end">
-                        <div class="emp-stats-num">18 layanan</div>
-                        <div class="emp-status-badge">Aktif</div>
-                    </div>
-                </div>
-
-                <!-- Staff 3 (Desktop/Laptop extra item) -->
-                <div class="employee-card">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-wrapper">
-                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" alt="Dimas Rizky" class="avatar-img">
-                            <span class="status-dot-active"></span>
-                        </div>
-                        <div>
-                            <div class="emp-name">Dimas Rizky</div>
-                            <div class="emp-role-barber">Junior Barber</div>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="emp-stats-num">14 layanan</div>
-                        <div class="emp-status-badge">Aktif</div>
-                    </div>
-                </div>
-
+                @empty
+                    <div class="text-center text-muted py-3">Belum ada karyawan terdaftar.</div>
+                @endforelse
             </div>
         </section>
 

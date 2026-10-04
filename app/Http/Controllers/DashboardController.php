@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -12,40 +11,68 @@ class DashboardController extends Controller
     //     echo "<br>";
     //     echo "<a href='logout'>Logout</a>";
     // }
-    function pelanggan(){
+    public function pelanggan()
+    {
         return view('pelanggan.Dashboard');
     }
-    function kasir(){
-        return view('kasir.Dashboard');
+
+    public function kasir()
+    {
+        return view('Kasir.Dashboard');
     }
-    function admin(){
+
+    public function bookingWalkin()
+    {
+        return view('Kasir.BookingWalkin');
+    }
+
+    public function admin()
+    {
         return view('Admin.Dashboard');
     }
 
-    function Barbershop(){
+    public function kelolaKaryawan()
+    {
+        return view('Admin.KelolaKaryawan');
+    }
+
+    public function laporanPendapatan()
+    {
+        return view('Admin.LaporanPendapatan');
+    }
+
+    public function Barbershop()
+    {
         return view('pelanggan.Barbershop');
     }
-    function MUA(){
+
+    public function MUA()
+    {
         return view('pelanggan.MUA');
     }
 
-    function booking(){
+    public function booking()
+    {
         return view('pelanggan.Booking');
     }
 
-    function riwayat(){
+    public function riwayat()
+    {
         return view('pelanggan.Riwayat');
     }
 
-    function order(){
+    public function order()
+    {
         return view('pelanggan.Order');
     }
 
-    function profile(){
+    public function profile()
+    {
         return view('pelanggan.Profile');
     }
 
-    function bookingInput(){
+    public function bookingInput()
+    {
         return view('pelanggan.BookingInput');
     }
 }

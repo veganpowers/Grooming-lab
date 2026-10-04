@@ -1,4 +1,104 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Catat Walk-in - GlowCut</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <style>
+	:root {
+		--bg-dark: #0a0a0c;
+		--card-bg: #141418;
+		--card-border: #23232c;
+		--gold-primary: #e5be58;
+		--gold-border: rgba(229, 190, 88, 0.3);
+		--text-muted: #8e8e9a;
+	}
+
+	body {
+		min-height: 100vh;
+		margin: 0;
+		background: var(--bg-dark);
+		color: #fff;
+		font-family: 'Plus Jakarta Sans', sans-serif;
+	}
+
+	.app-container {
+		width: min(100%, 960px);
+		min-height: 100vh;
+		margin: 0 auto;
+		padding: 1.5rem 1rem 3rem;
+	}
+
+	.font-serif {
+		font-family: 'DM Serif Display', serif;
+	}
+
+	.header-sub {
+		color: var(--text-muted);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 1.5px;
+	}
+
+	.header-title {
+		margin-bottom: 0.1rem;
+		color: #fff;
+		font-size: 1.7rem;
+	}
+
+	.header-date,
+	.stats-sub {
+		color: var(--text-muted);
+		font-size: 0.78rem;
+	}
+
+	.btn-circle-icon {
+		display: flex;
+		width: 42px;
+		height: 42px;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid #282832;
+		border-radius: 50%;
+		background: #17171d;
+		color: #fff;
+		text-decoration: none;
+	}
+
+	.stats-card {
+		margin: 1.25rem 0;
+		padding: 1.25rem 1rem;
+		border: 1px solid var(--gold-border);
+		border-radius: 1rem;
+		background: linear-gradient(145deg, #181610 0%, #121216 100%);
+	}
+
+	.stats-label {
+		color: #bfa152;
+		font-size: 0.68rem;
+		font-weight: 700;
+	}
+
+	.stats-value {
+		color: var(--gold-primary);
+		font-size: 1.1rem;
+		font-weight: 800;
+	}
+
+	.btn-gold-action {
+		width: 100%;
+		padding: 0.9rem 1rem;
+		border: 0;
+		border-radius: 0.8rem;
+		background: linear-gradient(135deg, #ebd178 0%, #e5be58 50%, #c99b33 100%);
+		color: #0d0d0f;
+		font-weight: 800;
+	}
+
 	.walkin-dialog {
 		max-width: 560px;
 		padding: 0 0.5rem;
@@ -258,6 +358,41 @@
 		}
 	}
 </style>
+</head>
+<body>
+    <div class="app-container">
+        @include('Kasir.partials.page-header', [
+            'title' => 'Catat Walk-in',
+            'date' => 'Input transaksi hari ini',
+			'backRoute' => route('kasir.dashboard'),
+			'showLogout' => false
+        ])
+
+        <section class="stats-card mb-3">
+            <div class="row text-center g-0">
+                @include('Kasir.partials.summary-card', [
+                    'label' => 'BARBER',
+                    'value' => 'Rp 215k',
+                    'caption' => '3 transaksi'
+                ])
+                @include('Kasir.partials.summary-card', [
+                    'label' => 'MUA',
+                    'value' => 'Rp 180k',
+                    'caption' => '2 transaksi'
+                ])
+                @include('Kasir.partials.summary-card', [
+                    'label' => 'TOTAL',
+                    'value' => 'Rp 395k',
+                    'caption' => 'Hari ini'
+                ])
+            </div>
+        </section>
+
+        <button type="button" class="btn btn-gold-action d-flex align-items-center justify-content-center gap-2 mb-3" onclick="showWalkInModal()">
+            <i class="fa-solid fa-plus fs-6"></i>
+            <span>Tambah Pelanggan Walk-in</span>
+        </button>
+    </div>
 
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
 	<div id="walkInToast" class="toast align-items-center text-bg-success border-0 rounded-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
@@ -290,11 +425,21 @@
 						<label for="walkInCustomerName" class="form-label walkin-label">NAMA PELANGGAN</label>
 						<input id="walkInCustomerName" name="customer_name" type="text" required class="form-control walkin-input" placeholder="Masukkan nama">
 					</div>
-					<div class="walkin-categories mb-3" role="group" aria-label="Kategori layanan">
-						<button type="button" class="walkin-category-btn active" data-category="barber" aria-pressed="true" onclick="setWalkInCategory('barber', this)">✂ Barber</button>
-						<button type="button" class="walkin-category-btn" data-category="mua" aria-pressed="false" onclick="setWalkInCategory('mua', this)">💄 MUA</button>
+					<div class="mb-3">
+						<label for="walkInCategory" class="form-label walkin-label">KATEGORI LAYANAN</label>
+						<select id="walkInCategory" class="form-select walkin-input" onchange="updateWalkInServices()">
+							<option value="barber">Barbershop</option>
+							<option value="mua">MUA Wisuda</option>
+						</select>
 					</div>
-					<div id="walkInServices" class="walkin-services" aria-label="Pilih layanan"></div>
+					<div class="mb-3">
+						<label for="walkInService" class="form-label walkin-label">PILIH LAYANAN</label>
+						<select id="walkInService" class="form-select walkin-input" required></select>
+					</div>
+					<div class="mb-3">
+						<label for="walkInStaff" class="form-label walkin-label">KAPSTER / STAFF</label>
+						<input id="walkInStaff" type="text" required class="form-control walkin-input" placeholder="Nama kapster/MUA">
+					</div>
 					<div class="walkin-actions">
 						<button type="button" class="walkin-cancel" onclick="hideWalkInModal()">Batal</button>
 						<button type="submit" class="walkin-save">Simpan</button>
@@ -306,9 +451,7 @@
 </div>
 
 <script>
-	let walkInCategory = 'barber';
-
-	const walkInCatalog = {
+	const walkInServiceCatalog = {
 		barber: [
 			{ name: 'Fast Haircut', price: 25000 },
 			{ name: 'Rileks Ganteng', price: 35000 },
@@ -322,28 +465,20 @@
 		]
 	};
 
-	function setWalkInCategory(category, button) {
-		walkInCategory = category;
-		document.querySelectorAll('.walkin-category-btn').forEach(categoryButton => {
-			const isActive = categoryButton === button;
-			categoryButton.classList.toggle('active', isActive);
-			categoryButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+	function updateWalkInServices() {
+		const category = document.getElementById('walkInCategory').value;
+		const serviceSelect = document.getElementById('walkInService');
+		const services = walkInServiceCatalog[category] || [];
+
+		serviceSelect.replaceChildren();
+		services.forEach(service => {
+			const option = new Option(
+				`${service.name} - Rp ${new Intl.NumberFormat('id-ID').format(service.price)}`,
+				service.name
+			);
+			option.dataset.price = String(service.price);
+			serviceSelect.add(option);
 		});
-
-		renderWalkInServices();
-	}
-
-	function renderWalkInServices() {
-		const serviceList = document.getElementById('walkInServices');
-		const serviceType = walkInCategory === 'barber' ? 'Barber service' : 'MUA service';
-
-		serviceList.innerHTML = walkInCatalog[walkInCategory].map(service => `
-			<label class="walkin-service-option">
-				<input type="radio" name="walk_in_service" value="${service.name}" required>
-				<span class="walkin-service-name">${service.name}</span>
-				<span class="walkin-service-detail">${serviceType}<span class="walkin-service-price">Rp ${new Intl.NumberFormat('id-ID').format(service.price)}</span></span>
-			</label>
-		`).join('');
 	}
 
 	function showWalkInModal() {
@@ -376,8 +511,6 @@
 		}
 	}
 
-	renderWalkInServices();
-
 	document.addEventListener('keydown', event => {
 		if (event.key === 'Escape' && document.getElementById('walkInModal').classList.contains('show')) {
 			hideWalkInModal();
@@ -389,4 +522,8 @@
 			hideWalkInModal();
 		}
 	});
+
+	updateWalkInServices();
 </script>
+</body>
+</html>

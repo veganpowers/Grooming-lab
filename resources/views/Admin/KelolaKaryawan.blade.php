@@ -1,392 +1,356 @@
-<style>
-	.walkin-dialog {
-		max-width: 560px;
-		padding: 0 0.5rem;
-	}
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Karyawan - GlowCut</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #1d1f24;
+            --bg-panel: #23262d;
+            --gold: #f3c65d;
+            --text: #f4f4f4;
+            --muted: #a5a5a8;
+            --border: rgba(255, 255, 255, 0.18);
+        }
 
-	.walkin-modal {
-		position: fixed;
-		inset: 0;
-		z-index: 1055;
-		display: none;
-		overflow-y: auto;
-		padding: 0.5rem;
-		background: rgba(0, 0, 0, 0.78);
-	}
+        * {
+            box-sizing: border-box;
+        }
 
-	.walkin-modal.show {
-		display: block;
-	}
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-	.walkin-modal .modal-dialog {
-		display: flex;
-		align-items: center;
-		min-height: calc(100% - 1rem);
-		margin: 0.5rem auto;
-	}
+        body {
+            min-height: 100vh;
+        }
 
-	.walkin-modal .modal-content {
-		width: 100%;
-	}
+        .blank-admin-page {
+            min-height: 100vh;
+            background: #1f2127;
+            padding: 1.2rem 1.5rem 2rem;
+        }
 
-	body.walkin-open {
-		overflow: hidden;
-	}
+        .blank-admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            min-height: 120px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 0.3rem 0 0.5rem;
+        }
 
-	.walkin-content {
-		background: #1c1b19;
-		border: 1px solid #302f2b;
-		border-radius: 1.4rem;
-		color: #f6f3ec;
-		box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
-	}
+        .blank-admin-label {
+            color: var(--gold);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.12rem;
+            text-transform: uppercase;
+            margin: 0 0 0.35rem;
+        }
 
-	.walkin-header {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1rem;
-		border: 0;
-		padding: 1.5rem 1.5rem 0.65rem;
-	}
+        .blank-admin-title {
+            font-size: clamp(2.5rem, 5vw, 5rem);
+            line-height: 0.95;
+            font-weight: 700;
+            letter-spacing: -0.06em;
+            color: #f3f3f3;
+            margin: 0;
+            font-family: Georgia, 'Times New Roman', serif;
+        }
 
-	.walkin-header > div:first-child {
-		flex: 1;
-		min-width: 0;
-	}
+        .blank-admin-back {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text);
+            padding: 0.8rem 1.4rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
 
-	.walkin-eyebrow {
-		color: #c9b77e;
-		font-size: 0.62rem;
-		font-weight: 800;
-		letter-spacing: 1.5px;
-		margin-bottom: 0.45rem;
-	}
+        .blank-admin-back:hover {
+            border-color: rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.02);
+            color: #fff;
+            text-decoration: none;
+        }
 
-	.walkin-title {
-		color: #f6f3ec !important;
-		font-family: 'DM Serif Display', serif;
-		font-size: 1.8rem;
-		margin: 0;
-	}
+        .blank-admin-back i {
+            font-size: 1rem;
+        }
 
-	.walkin-close {
-		width: 40px;
-		height: 40px;
-		flex: 0 0 40px;
-		margin-left: auto;
-		border: 1px solid #383733;
-		border-radius: 0.8rem;
-		display: grid;
-		place-items: center;
-		background: transparent;
-		color: #e7e3da;
-		font-size: 1.2rem;
-		line-height: 1;
-	}
+        .blank-admin-content {
+            min-height: calc(100vh - 140px);
+            max-width: 760px;
+            margin: 2rem auto 0;
+        }
 
-	.walkin-close:hover {
-		border-color: var(--gold-primary);
-		color: var(--gold-primary);
-	}
+        .employee-account-list {
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 0.8rem;
+            background: #23262d;
+        }
 
-	.walkin-body {
-		padding: 0.65rem 1.5rem 1.5rem;
-	}
+        .employee-account-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.8rem 1rem;
+        }
 
-	.walkin-label {
-		color: #aaa69d;
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.7px;
-		margin-bottom: 0.55rem;
-	}
+        .employee-account-row + .employee-account-row {
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
 
-	.walkin-input {
-		background: #121212;
-		border: 1px solid #2b2a27;
-		border-radius: 0.8rem;
-		color: #f6f3ec;
-		min-height: 48px;
-		padding: 0.75rem 0.9rem;
-	}
+        .employee-avatar-initial {
+            display: grid;
+            width: 2.4rem;
+            height: 2.4rem;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 50%;
+            background: #382957;
+            color: #c7a6ff;
+            font-weight: 800;
+        }
 
-	.walkin-input::placeholder {
-		color: #77746e;
-	}
+        .employee-account-details {
+            min-width: 0;
+            flex: 1;
+        }
 
-	.walkin-input:focus {
-		background: #121212;
-		border-color: var(--gold-primary);
-		box-shadow: 0 0 0 0.2rem rgba(229, 190, 88, 0.12);
-		color: #fff;
-	}
+        .employee-account-name {
+            color: #f5f5f6;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
 
-	.walkin-categories {
-		display: flex;
-		gap: 0.3rem;
-		padding: 0.3rem;
-		background: #151514;
-		border: 1px solid #2b2a27;
-		border-radius: 0.9rem;
-	}
+        .employee-account-meta {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
 
-	.walkin-category-btn {
-		flex: 1;
-		min-height: 40px;
-		border: 0;
-		border-radius: 0.55rem;
-		background: transparent;
-		color: #c9c5bd;
-		font-weight: 700;
-	}
+        .employee-account-status {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 50%;
+            background: #43d59a;
+        }
 
-	.walkin-category-btn.active {
-		background: var(--gold-primary);
-		color: #171511;
-	}
+        .employee-create-form {
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 0.8rem;
+            background: #23262d;
+        }
 
-	.walkin-services {
-		display: grid;
-		gap: 0.45rem;
-		max-height: 220px;
-		overflow-y: auto;
-	}
+        .employee-create-form .form-label {
+            color: #d2d2d5;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
 
-	.walkin-service-option {
-		position: relative;
-		display: block;
-		padding: 0.6rem 0.75rem;
-		border: 1px solid transparent;
-		background: #191918;
-		color: #e9e6df;
-		cursor: pointer;
-		text-align: center;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
+        .employee-create-form .form-control,
+        .employee-create-form .form-select {
+            border-color: rgba(255,255,255,0.16);
+            background-color: #1d1f24;
+            color: #f4f4f4;
+        }
 
-	.walkin-service-option:hover,
-	.walkin-service-option:has(input:checked) {
-		background: #222118;
-		border-color: rgba(229, 190, 88, 0.55);
-	}
+        .employee-add-toggle {
+            width: 100%;
+            margin: 1rem 0;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(243,198,93,0.45);
+            border-radius: 0.7rem;
+            background: transparent;
+            color: var(--gold);
+            font-weight: 700;
+        }
 
-	.walkin-service-option input {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		opacity: 0;
-	}
+        .employee-submit {
+            border: 0;
+            background: var(--gold);
+            color: #1d1f24;
+            font-weight: 800;
+        }
 
-	.walkin-service-option input:focus-visible + .walkin-service-name {
-		outline: 2px solid var(--gold-primary);
-		outline-offset: 3px;
-	}
+        @media (max-width: 767.98px) {
+            .blank-admin-page {
+                padding: 1rem 1rem 2rem;
+            }
 
-	.walkin-service-name {
-		display: block;
-		font-size: 0.92rem;
-		font-weight: 800;
-	}
+            .blank-admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: center;
+                min-height: auto;
+                padding-top: 0.25rem;
+            }
 
-	.walkin-service-detail {
-		display: block;
-		margin-top: 0.25rem;
-		color: #99958c;
-		font-size: 0.66rem;
-		text-transform: uppercase;
-	}
+            .blank-admin-back {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blank-admin-page">
+        <header class="blank-admin-header">
+            <div>
+                <div class="blank-admin-label">Admin</div>
+                <h1 class="blank-admin-title">Kelola Karyawan</h1>
+            </div>
 
-	.walkin-service-price {
-		color: var(--gold-primary);
-		font-size: 0.8rem;
-		font-weight: 800;
-		margin-left: 0.2rem;
-	}
+            <a href="{{ route('admin.dashboard') }}" class="blank-admin-back">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Kembali ke Dashboard</span>
+            </a>
+        </header>
 
-	.walkin-actions {
-		display: flex;
-		gap: 0.65rem;
-		margin-top: 1.35rem;
-	}
+        <main class="blank-admin-content">
+            <div class="employee-account-list" id="employeeAccountList" aria-label="Daftar karyawan aktif">
+                <div class="employee-account-row">
+                    <span class="employee-avatar-initial" aria-hidden="true">B</span>
+                    <div class="employee-account-details">
+                        <div class="employee-account-name">Budi Santoso</div>
+                        <div class="employee-account-meta">Senior Barber</div>
+                    </div>
+                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
+                </div>
+                <div class="employee-account-row">
+                    <span class="employee-avatar-initial" aria-hidden="true">R</span>
+                    <div class="employee-account-details">
+                        <div class="employee-account-name">Rina Andini</div>
+                        <div class="employee-account-meta">MUA Artist</div>
+                    </div>
+                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
+                </div>
+                <div class="employee-account-row">
+                    <span class="employee-avatar-initial" aria-hidden="true">D</span>
+                    <div class="employee-account-details">
+                        <div class="employee-account-name">Dimas Rizky</div>
+                        <div class="employee-account-meta">Junior Barber</div>
+                    </div>
+                    <span class="employee-account-status" role="img" aria-label="Aktif"></span>
+                </div>
+            </div>
 
-	.walkin-actions button {
-		flex: 1;
-		min-height: 48px;
-		border-radius: 0.8rem;
-		font-weight: 800;
-	}
+            <button type="button" class="employee-add-toggle" id="employeeFormToggle" aria-expanded="true" aria-controls="employeeCreateForm" onclick="toggleEmployeeForm()">
+                <i class="fa-solid fa-plus me-2" aria-hidden="true"></i><span id="employeeFormToggleText">Tambah Karyawan</span>
+            </button>
 
-	.walkin-cancel {
-		background: transparent;
-		border: 1px solid #383733;
-		color: #e7e3da;
-	}
+            <form class="employee-create-form" id="employeeCreateForm" onsubmit="handleAddEmployee(event)">
+                <div class="mb-3">
+                    <label for="newEmpName" class="form-label">Nama Lengkap</label>
+                    <input type="text" id="newEmpName" required class="form-control" placeholder="Contoh: Rina Andini" autocomplete="name">
+                </div>
+                <div class="mb-3">
+                    <label for="newEmpUsername" class="form-label">Username</label>
+                    <input type="text" id="newEmpUsername" required class="form-control" placeholder="Contoh: rina.andini" autocomplete="username">
+                </div>
+                <div class="mb-3">
+                    <label for="newEmpPassword" class="form-label">Password</label>
+                    <input type="password" id="newEmpPassword" required minlength="8" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                </div>
+                <div class="mb-3">
+                    <label for="newEmpPasswordConfirm" class="form-label">Ulangi Password</label>
+                    <input type="password" id="newEmpPasswordConfirm" required minlength="8" class="form-control" placeholder="Ulangi password" autocomplete="new-password">
+                </div>
+                <div class="mb-3">
+                    <label for="newEmpRole" class="form-label">Peran / Posisi</label>
+                    <select id="newEmpRole" class="form-select">
+                        <option value="MUA Artist">MUA Artist</option>
+                        <option value="Hair Stylist">Hair Stylist</option>
+                    </select>
+                </div>
+                <div class="small text-danger mb-3" id="employeeFormError" role="alert"></div>
+                <button type="submit" class="btn employee-submit w-100">
+                    <i class="fa-solid fa-plus me-1" aria-hidden="true"></i>Buat Akun Karyawan
+                </button>
+            </form>
+        </main>
+    </div>
 
-	.walkin-cancel:hover {
-		border-color: #77746e;
-		color: #fff;
-	}
+    <script>
+        function toggleEmployeeForm() {
+            const form = document.getElementById('employeeCreateForm');
+            const toggle = document.getElementById('employeeFormToggle');
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
 
-	.walkin-save {
-		background: var(--gold-primary);
-		border: 1px solid var(--gold-primary);
-		color: #171511;
-	}
+            form.hidden = isExpanded;
+            toggle.setAttribute('aria-expanded', String(!isExpanded));
+            document.getElementById('employeeFormToggleText').textContent = isExpanded ? 'Tambah Karyawan' : 'Tutup Form';
+        }
 
-	.walkin-save:hover {
-		background: #f0cb65;
-		border-color: #f0cb65;
-		color: #171511;
-	}
+        function handleAddEmployee(event) {
+            event.preventDefault();
 
-	@media (max-width: 575.98px) {
-		.walkin-dialog {
-			margin: 0.75rem auto;
-		}
+            const nameInput = document.getElementById('newEmpName');
+            const usernameInput = document.getElementById('newEmpUsername');
+            const passwordInput = document.getElementById('newEmpPassword');
+            const confirmInput = document.getElementById('newEmpPasswordConfirm');
+            const roleInput = document.getElementById('newEmpRole');
+            const feedback = document.getElementById('employeeFormError');
+            const name = nameInput.value.trim();
 
-		.walkin-header {
-			padding: 1.25rem 1.15rem 0.55rem;
-		}
+            if (passwordInput.value !== confirmInput.value) {
+                feedback.textContent = 'Password dan konfirmasi password tidak cocok.';
+                confirmInput.focus();
+                return;
+            }
 
-		.walkin-body {
-			padding: 0.65rem 1.15rem 1.15rem;
-		}
+            const row = document.createElement('div');
+            row.className = 'employee-account-row';
 
-		.walkin-title {
-			font-size: 1.6rem;
-		}
-	}
-</style>
+            const initial = document.createElement('span');
+            initial.className = 'employee-avatar-initial';
+            initial.setAttribute('aria-hidden', 'true');
+            initial.textContent = name.charAt(0).toUpperCase();
 
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
-	<div id="walkInToast" class="toast align-items-center text-bg-success border-0 rounded-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-		<div class="d-flex">
-			<div class="toast-body d-flex align-items-center gap-2">
-				<i class="fa-solid fa-circle-check fs-5"></i>
-				<div>
-					<strong class="d-block">Berhasil!</strong>
-					<span class="small">Pelanggan walk-in telah ditambahkan.</span>
-				</div>
-			</div>
-			<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-		</div>
-	</div>
-</div>
+            const details = document.createElement('div');
+            details.className = 'employee-account-details';
 
-<div class="modal walkin-modal" id="walkInModal" tabindex="-1" aria-labelledby="walkInModalLabel" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered walkin-dialog">
-		<div class="modal-content walkin-content">
-			<div class="modal-header walkin-header">
-				<div>
-					<div class="walkin-eyebrow">WALK-IN</div>
-					<h2 class="walkin-title" id="walkInModalLabel">Pelanggan Baru</h2>
-				</div>
-				<button type="button" class="walkin-close" onclick="hideWalkInModal()" aria-label="Tutup">&times;</button>
-			</div>
-			<div class="modal-body walkin-body">
-				<form id="walkInForm" onsubmit="addWalkInCustomer(event)">
-					<div class="mb-3">
-						<label for="walkInCustomerName" class="form-label walkin-label">NAMA PELANGGAN</label>
-						<input id="walkInCustomerName" name="customer_name" type="text" required class="form-control walkin-input" placeholder="Masukkan nama">
-					</div>
-					<div class="walkin-categories mb-3" role="group" aria-label="Kategori layanan">
-						<button type="button" class="walkin-category-btn active" data-category="barber" aria-pressed="true" onclick="setWalkInCategory('barber', this)">✂ Barber</button>
-						<button type="button" class="walkin-category-btn" data-category="mua" aria-pressed="false" onclick="setWalkInCategory('mua', this)">💄 MUA</button>
-					</div>
-					<div id="walkInServices" class="walkin-services" aria-label="Pilih layanan"></div>
-					<div class="walkin-actions">
-						<button type="button" class="walkin-cancel" onclick="hideWalkInModal()">Batal</button>
-						<button type="submit" class="walkin-save">Simpan</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-</div>
+            const employeeName = document.createElement('div');
+            employeeName.className = 'employee-account-name';
+            employeeName.textContent = name;
 
-<script>
-	let walkInCategory = 'barber';
+            const employeeMeta = document.createElement('div');
+            employeeMeta.className = 'employee-account-meta';
+            employeeMeta.textContent = `${usernameInput.value.trim()} · ${roleInput.value}`;
 
-	const walkInCatalog = {
-		barber: [
-			{ name: 'Fast Haircut', price: 25000 },
-			{ name: 'Rileks Ganteng', price: 35000 },
-			{ name: 'Full Grooming', price: 50000 }
-		],
-		mua: [
-			{ name: 'Makeup Only', price: 250000 },
-			{ name: 'Make Up + Soft Lens', price: 300000 },
-			{ name: 'Make Up + Hijab/Hair Do', price: 320000 },
-			{ name: 'Make Up + Hijab/Hair Do + Soft Lens', price: 360000 }
-		]
-	};
+            const status = document.createElement('span');
+            status.className = 'employee-account-status';
+            status.setAttribute('role', 'img');
+            status.setAttribute('aria-label', 'Aktif');
 
-	function setWalkInCategory(category, button) {
-		walkInCategory = category;
-		document.querySelectorAll('.walkin-category-btn').forEach(categoryButton => {
-			const isActive = categoryButton === button;
-			categoryButton.classList.toggle('active', isActive);
-			categoryButton.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-		});
+            details.append(employeeName, employeeMeta);
+            row.append(initial, details, status);
+            document.getElementById('employeeAccountList').prepend(row);
 
-		renderWalkInServices();
-	}
-
-	function renderWalkInServices() {
-		const serviceList = document.getElementById('walkInServices');
-		const serviceType = walkInCategory === 'barber' ? 'Barber service' : 'MUA service';
-
-		serviceList.innerHTML = walkInCatalog[walkInCategory].map(service => `
-			<label class="walkin-service-option">
-				<input type="radio" name="walk_in_service" value="${service.name}" required>
-				<span class="walkin-service-name">${service.name}</span>
-				<span class="walkin-service-detail">${serviceType}<span class="walkin-service-price">Rp ${new Intl.NumberFormat('id-ID').format(service.price)}</span></span>
-			</label>
-		`).join('');
-	}
-
-	function showWalkInModal() {
-		const modalEl = document.getElementById('walkInModal');
-		modalEl.classList.add('show');
-		modalEl.setAttribute('aria-hidden', 'false');
-		modalEl.setAttribute('aria-modal', 'true');
-		document.body.classList.add('walkin-open');
-		document.getElementById('walkInCustomerName').focus();
-	}
-
-	function hideWalkInModal() {
-		const modalEl = document.getElementById('walkInModal');
-		modalEl.classList.remove('show');
-		modalEl.setAttribute('aria-hidden', 'true');
-		modalEl.removeAttribute('aria-modal');
-		document.body.classList.remove('walkin-open');
-	}
-
-	function addWalkInCustomer(event) {
-		event.preventDefault();
-		hideWalkInModal();
-
-		const toastEl = document.getElementById('walkInToast');
-		if (toastEl && window.bootstrap && window.bootstrap.Toast) {
-			new bootstrap.Toast(toastEl).show();
-		} else if (toastEl) {
-			toastEl.classList.add('show');
-			window.setTimeout(() => toastEl.classList.remove('show'), 3000);
-		}
-	}
-
-	renderWalkInServices();
-
-	document.addEventListener('keydown', event => {
-		if (event.key === 'Escape' && document.getElementById('walkInModal').classList.contains('show')) {
-			hideWalkInModal();
-		}
-	});
-
-	document.getElementById('walkInModal').addEventListener('click', event => {
-		if (event.target === event.currentTarget) {
-			hideWalkInModal();
-		}
-	});
-</script>
+            event.currentTarget.reset();
+            feedback.textContent = `${name} ditambahkan ke daftar pada halaman ini.`;
+            feedback.classList.remove('text-danger');
+            feedback.classList.add('text-success');
+        }
+    </script>
+</body>
+</html>

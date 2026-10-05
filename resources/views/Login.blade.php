@@ -690,6 +690,21 @@
                 toggle.textContent = current === 'dark' ? '🌙' : '☀️';
             });
         })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+            const passwordInput = document.getElementById('passwordInput');
+
+            if (togglePasswordBtn && passwordInput) {
+                togglePasswordBtn.addEventListener('click', function () {
+                    const isPassword = passwordInput.getAttribute('type') === 'password';
+                    passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                    
+                    this.classList.toggle('bi-eye', !isPassword);
+                    this.classList.toggle('bi-eye-slash', isPassword);
+                });
+            }
+        });
     </script>
 </body>
 

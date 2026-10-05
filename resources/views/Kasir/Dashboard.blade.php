@@ -65,6 +65,7 @@
             .booking-card[role="button"]:focus-visible {
                 outline: 2px solid var(--gold-primary);
                 outline-offset: 3px;
+            }
         }
 
         @media (min-width: 992px) {
@@ -570,8 +571,10 @@
         <!-- Top Navigation / Header -->
         @include('Kasir.partials.page-header', [
             'title' => 'Dashboard Kasir',
-            'date' => 'Kamis, 24 September 2026',
-            'backRoute' => null
+            'date' => \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM Y'),
+            'backRoute' => null,
+            'userName' => \Illuminate\Support\Facades\Auth::user()->name ?? 'Kasir',
+            'userRole' => isset($loggedInEmployee) ? $loggedInEmployee->position : (\Illuminate\Support\Facades\Auth::user()->role === 'kasir' ? 'Kasir' : \Illuminate\Support\Facades\Auth::user()->role)
         ])
 
         <!-- Daily Summary Cards -->
@@ -579,17 +582,17 @@
             <div class="row text-center g-0">
                 @include('Kasir.partials.summary-card', [
                     'label' => 'BOOKING',
-                    'value' => 'Rp 204k',
-                    'caption' => '2 selesai'
+                    'value' => 'Rp ' . number_format($onlineRevenue / 1000, 0, ',', '.') . 'k',
+                    'caption' => $onlineCompletedCount . ' selesai'
                 ])
                 @include('Kasir.partials.summary-card', [
                     'label' => 'WALK-IN',
-                    'value' => 'Rp 215k',
-                    'caption' => '3 transaksi'
+                    'value' => 'Rp ' . number_format($walkInRevenue / 1000, 0, ',', '.') . 'k',
+                    'caption' => $walkInCompletedCount . ' transaksi'
                 ])
                 @include('Kasir.partials.summary-card', [
                     'label' => 'TOTAL',
-                    'value' => 'Rp 419k',
+                    'value' => 'Rp ' . number_format($totalRevenue / 1000, 0, ',', '.') . 'k',
                     'caption' => 'Hari ini'
                 ])
             </div>
@@ -638,7 +641,7 @@
             @endforeach
 
             @if ($walkInBookings->isEmpty())
-                <p class="text-center text-muted py-4">Belum ada booking hari ini.</p>
+                <p class="text-center text-muted py-4" style="grid-column: 1 / -1;">Belum ada booking hari ini.</p>
             @endif
 
         </main>
@@ -718,9 +721,52 @@
             document.getElementById('bookingDetailStatus').textContent = card.dataset.status;
             document.getElementById('completeBookingForm').action = card.dataset.completeUrl;
 
-            const isComplete = card.dataset.status === 'selesai';
+            const status = card.dataset.status;
+            const category = card.dataset.category;
+            const isComplete = status === 'selesai';
+            
+            const btn = document.querySelector('#completeBookingForm button[type="submit"]');
+            if (status === 'menunggu') {
+                btn.textContent = 'Proses Booking';
+            } else {
+                btn.textContent = 'Selesaikan Booking';
+            }
+
             document.getElementById('completeBookingForm').classList.toggle('d-none', isComplete);
             document.getElementById('bookingAlreadyComplete').classList.toggle('d-none', !isComplete);
+            
+            // ROLE LOCK LOGIC
+            const userPosition = "{{ $loggedInEmployee->position ?? '' }}";
+            let canProcess = true;
+            let warningText = '';
+            
+            if (userPosition === 'Hair Stylist' && category === 'mua') {
+                canProcess = false;
+                warningText = 'Hair Stylist tidak bisa memproses booking MUA.';
+            } else if (userPosition === 'MUA Artist' && category === 'barber') {
+                canProcess = false;
+                warningText = 'MUA Artist tidak bisa memproses booking Barber.';
+            }
+            
+            let warningEl = document.getElementById('roleLockWarning');
+            if (!warningEl) {
+                warningEl = document.createElement('div');
+                warningEl.id = 'roleLockWarning';
+                warningEl.className = 'alert alert-danger mt-3 mb-0';
+                document.getElementById('completeBookingForm').parentElement.appendChild(warningEl);
+            }
+            
+            if (!canProcess && !isComplete) {
+                btn.disabled = true;
+                btn.classList.add('d-none');
+                warningEl.textContent = warningText;
+                warningEl.classList.remove('d-none');
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('d-none');
+                warningEl.classList.add('d-none');
+            }
+
             bootstrap.Modal.getOrCreateInstance(document.getElementById('bookingDetailModal')).show();
         }
 

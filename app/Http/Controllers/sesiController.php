@@ -98,7 +98,7 @@ class SesiController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8|confirmed',
             'terms' => 'accepted',
         ], [
             'name.required' => 'Nama lengkap wajib diisi.',
@@ -108,6 +108,7 @@ class SesiController extends Controller
             'email.unique' => 'Email sudah terdaftar, silakan gunakan email lain.',
             'password.required' => 'Password wajib diisi.',
             'password.min' => 'Password minimal harus 8 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
             'terms.accepted' => 'Anda harus menyetujui Syarat & Ketentuan.',
         ]);
 
@@ -132,10 +133,7 @@ class SesiController extends Controller
             'role' => 'pelanggan',
         ]);
 
-        // 4. Langsung Login setelah berhasil mendaftar
-        Auth::login($user);
-
-        // 5. Redirect ke Halaman Dashboard dengan Pesan Sukses
-        return redirect()->to('/dashboard/pelanggan')->with('success', 'Akun berhasil dibuat! Selamat datang di GlowCut.');
+        // 4. Redirect ke Halaman Login dengan Pesan Sukses
+        return redirect()->route('login')->with('success', 'Akun berhasil dibuat! Silakan login untuk melanjutkan.');
     }
 }

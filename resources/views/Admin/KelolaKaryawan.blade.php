@@ -241,6 +241,16 @@
                 align-self: flex-end;
             }
         }
+        .password-toggle-btn {
+            border-color: rgba(255,255,255,0.16);
+            background-color: #1d1f24;
+            color: var(--muted);
+        }
+        .password-toggle-btn:hover, .password-toggle-btn:focus {
+            color: var(--text);
+            background-color: #23262d;
+            border-color: rgba(255,255,255,0.3);
+        }
     </style>
 </head>
 <body>
@@ -301,6 +311,24 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <div>
+                                    <label for="employeePassword{{ $employee->id }}" class="form-label mt-2">Password Baru (Opsional)</label>
+                                    <div class="input-group">
+                                        <input type="password" id="employeePassword{{ $employee->id }}" name="password" minlength="8" class="form-control" placeholder="Kosongkan jika tidak diubah" autocomplete="new-password">
+                                        <button class="btn password-toggle-btn" type="button" tabindex="-1" onclick="togglePasswordVisibility('employeePassword{{ $employee->id }}', this)">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="employeePasswordConfirm{{ $employee->id }}" class="form-label mt-2">Ulangi Password Baru</label>
+                                    <div class="input-group mb-3">
+                                        <input type="password" id="employeePasswordConfirm{{ $employee->id }}" name="password_confirmation" minlength="8" class="form-control" placeholder="Ulangi password baru" autocomplete="new-password">
+                                        <button class="btn password-toggle-btn" type="button" tabindex="-1" onclick="togglePasswordVisibility('employeePasswordConfirm{{ $employee->id }}', this)">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <button type="submit" class="btn employee-submit">Simpan Perubahan</button>
                             </form>
                             <form class="mt-2" method="POST" action="{{ route('admin.karyawan.destroy', $employee) }}" onsubmit="return confirm('Hapus akun dan profil {{ $employee->name }}?')">
@@ -317,11 +345,11 @@
                 @endforelse
             </div>
 
-            <button type="button" class="employee-add-toggle" id="employeeFormToggle" aria-expanded="true" aria-controls="employeeCreateForm" onclick="toggleEmployeeForm()">
-                <i class="fa-solid fa-plus me-2" aria-hidden="true"></i><span id="employeeFormToggleText">Tambah Karyawan</span>
+            <button type="button" class="employee-add-toggle" id="employeeFormToggle" aria-expanded="{{ $errors->any() ? 'true' : 'false' }}" aria-controls="employeeCreateForm" onclick="toggleEmployeeForm()">
+                <i class="fa-solid fa-plus me-2" aria-hidden="true"></i><span id="employeeFormToggleText">{{ $errors->any() ? 'Tutup Form' : 'Tambah Karyawan' }}</span>
             </button>
 
-            <form class="employee-create-form" id="employeeCreateForm" method="POST" action="{{ route('admin.karyawan.store') }}">
+            <form class="employee-create-form" id="employeeCreateForm" method="POST" action="{{ route('admin.karyawan.store') }}" {{ $errors->any() ? '' : 'hidden' }}>
                 @csrf
                 <div class="mb-3">
                     <label for="newEmpName" class="form-label">Nama Lengkap</label>
@@ -333,11 +361,21 @@
                 </div>
                 <div class="mb-3">
                     <label for="newEmpPassword" class="form-label">Password</label>
-                    <input type="password" id="newEmpPassword" name="password" required minlength="8" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                    <div class="input-group">
+                        <input type="password" id="newEmpPassword" name="password" required minlength="8" class="form-control" placeholder="Minimal 8 karakter" autocomplete="new-password">
+                        <button class="btn password-toggle-btn" type="button" tabindex="-1" onclick="togglePasswordVisibility('newEmpPassword', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="newEmpPasswordConfirm" class="form-label">Ulangi Password</label>
-                    <input type="password" id="newEmpPasswordConfirm" name="password_confirmation" required minlength="8" class="form-control" placeholder="Ulangi password" autocomplete="new-password">
+                    <div class="input-group">
+                        <input type="password" id="newEmpPasswordConfirm" name="password_confirmation" required minlength="8" class="form-control" placeholder="Ulangi password" autocomplete="new-password">
+                        <button class="btn password-toggle-btn" type="button" tabindex="-1" onclick="togglePasswordVisibility('newEmpPasswordConfirm', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="newEmpRole" class="form-label">Peran / Posisi</label>
@@ -365,6 +403,20 @@
             document.getElementById('employeeFormToggleText').textContent = isExpanded ? 'Tambah Karyawan' : 'Tutup Form';
         }
 
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
     </script>
 </body>
 </html>

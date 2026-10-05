@@ -14,6 +14,8 @@ class Booking extends Model
         'service_price',
         'staff_name',
         'cashier_id',
+        'user_id',
+        'notes',
         'appointment_at',
         'status',
     ];

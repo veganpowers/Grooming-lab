@@ -79,11 +79,18 @@ class AdminController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'position' => ['required', Rule::in(self::EMPLOYEE_POSITIONS)],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
         ]);
 
         DB::transaction(function () use ($data, $employee): void {
-            $employee->update($data);
-            $employee->user?->update(['name' => $data['name']]);
+            $employee->update(['name' => $data['name'], 'position' => $data['position']]);
+            if ($employee->user) {
+                $userData = ['name' => $data['name']];
+                if (!empty($data['password'])) {
+                    $userData['password'] = \Illuminate\Support\Facades\Hash::make($data['password']);
+                }
+                $employee->user->update($userData);
+            }
         });
 
         return to_route('admin.karyawan')->with('success', 'Data karyawan berhasil diperbarui.');

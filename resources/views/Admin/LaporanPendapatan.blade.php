@@ -252,7 +252,11 @@
                     </article>
                 @empty
                     <div class="text-center text-muted small py-4">Tidak ada transaksi pada rentang tanggal ini.</div>
-                @endforelse
+                                @endforelse
+            </div>
+            
+            <div class="mt-4 d-flex justify-content-center" data-bs-theme="dark">
+                {{ $transactions->links('pagination::bootstrap-5') }}
             </div>
             <button type="button" class="btn btn-warning fw-bold mt-3" data-bs-toggle="modal" data-bs-target="#exportReportModal">
                 <i class="fa-solid fa-file-excel me-2"></i>Unduh Excel

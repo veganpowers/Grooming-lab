@@ -41,11 +41,33 @@ class DashboardController extends Controller
     {
         $walkInBookings = Booking::query()
             ->whereDate('appointment_at', now()->toDateString())
+            ->where('status', '!=', 'cancelled')
             ->latest('appointment_at')
             ->get();
 
+        $onlineBookings = clone $walkInBookings;
+        $onlineBookings = $onlineBookings->whereNull('cashier_id');
+        $walkInOnly = clone $walkInBookings;
+        $walkInOnly = $walkInOnly->whereNotNull('cashier_id');
+
+        $onlineRevenue = $onlineBookings->where('status', 'completed')->sum('service_price');
+        $onlineCompletedCount = $onlineBookings->where('status', 'completed')->count();
+
+        $walkInRevenue = $walkInOnly->where('status', 'completed')->sum('service_price');
+        $walkInCompletedCount = $walkInOnly->where('status', 'completed')->count();
+
+        $totalRevenue = $onlineRevenue + $walkInRevenue;
+
+        $loggedInEmployee = \App\Models\Employee::where('name', \Illuminate\Support\Facades\Auth::user()->name)->first();
+
         return view('Kasir.Dashboard', [
             'walkInBookings' => $walkInBookings,
+            'onlineRevenue' => $onlineRevenue,
+            'onlineCompletedCount' => $onlineCompletedCount,
+            'walkInRevenue' => $walkInRevenue,
+            'walkInCompletedCount' => $walkInCompletedCount,
+            'totalRevenue' => $totalRevenue,
+            'loggedInEmployee' => $loggedInEmployee,
         ]);
     }
 
@@ -91,9 +113,24 @@ class DashboardController extends Controller
         return to_route('kasir.booking.walkin')->with('success', 'Booking walk-in berhasil disimpan.');
     }
 
-    public function completeBooking(Booking $booking): RedirectResponse
+    public function completeBooking(Request $request, Booking $booking): RedirectResponse
     {
         abort_unless(in_array($booking->status, ['pending', 'confirmed', 'in_progress'], true), 409);
+
+        $employee = \App\Models\Employee::where('name', $request->user()->name)->first();
+        if ($employee) {
+            if ($employee->position === 'Hair Stylist' && $booking->category === 'mua') {
+                abort(403, 'Hair Stylist tidak dapat memproses booking MUA.');
+            }
+            if ($employee->position === 'MUA Artist' && $booking->category === 'barber') {
+                abort(403, 'MUA Artist tidak dapat memproses booking Barber.');
+            }
+        }
+
+        if (in_array($booking->status, ['pending', 'confirmed'])) {
+            $booking->update(['status' => 'in_progress']);
+            return to_route('kasir.dashboard')->with('success', 'Booking sedang diproses.');
+        }
 
         $booking->update(['status' => 'completed']);
 
@@ -192,20 +229,24 @@ class DashboardController extends Controller
             return back()->withErrors(['end_date' => 'Rentang laporan maksimal 31 hari.'])->withInput();
         }
 
-        $transactions = Booking::query()
-            ->whereBetween('appointment_at', [$startDate->startOfDay(), $endDate->endOfDay()])
-            ->latest('appointment_at')
-            ->get();
-        $completedTransactions = $transactions->where('status', 'completed');
+                $query = Booking::query()
+            ->whereBetween('appointment_at', [$startDate->startOfDay(), $endDate->endOfDay()]);
+
+        $completedQuery = (clone $query)->where('status', 'completed');
+        $reportTotal = (clone $completedQuery)->sum('service_price');
+        $barberTotal = (clone $completedQuery)->where('category', 'barber')->sum('service_price');
+        $muaTotal = (clone $completedQuery)->where('category', 'mua')->sum('service_price');
+
+        $transactions = $query->latest('appointment_at')->paginate(10)->withQueryString();
 
         return view('Admin.LaporanPendapatan', [
             'transactions' => $transactions,
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
             'today' => CarbonImmutable::today()->toDateString(),
-            'reportTotal' => $completedTransactions->sum('service_price'),
-            'barberTotal' => $completedTransactions->where('category', 'barber')->sum('service_price'),
-            'muaTotal' => $completedTransactions->where('category', 'mua')->sum('service_price'),
+            'reportTotal' => $reportTotal,
+            'barberTotal' => $barberTotal,
+            'muaTotal' => $muaTotal,
         ]);
     }
 
@@ -295,23 +336,98 @@ class DashboardController extends Controller
         return view('pelanggan.Booking');
     }
 
-    public function riwayat()
+    public function riwayat(Request $request)
     {
-        return view('pelanggan.Riwayat');
+        $bookings = Booking::where('user_id', $request->user()->getKey())
+                           ->whereIn('status', ['completed', 'cancelled'])
+                           ->orderBy('appointment_at', 'desc')
+                           ->get();
+        return view('pelanggan.Riwayat', compact('bookings'));
     }
 
-    public function order()
+    public function order(Request $request)
     {
-        return view('pelanggan.Order');
+        $bookings = Booking::where('user_id', $request->user()->getKey())
+                           ->whereNotIn('status', ['completed', 'cancelled'])
+                           ->orderBy('appointment_at', 'desc')
+                           ->get();
+        return view('pelanggan.Order', compact('bookings'));
     }
 
-    public function profile()
+    public function profile(Request $request)
     {
-        return view('pelanggan.Profile');
+        $user = $request->user();
+        
+        $totalBooking = Booking::where('user_id', $user->getKey())->count();
+        $selesai = Booking::where('user_id', $user->getKey())->where('status', 'completed')->count();
+        $dibatalkan = Booking::where('user_id', $user->getKey())->where('status', 'cancelled')->count();
+        
+        return view('pelanggan.Profile', compact('user', 'totalBooking', 'selesai', 'dibatalkan'));
     }
 
-    public function bookingInput()
+    public function updatePassword(Request $request)
     {
-        return view('pelanggan.BookingInput');
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'min:8', 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+        ]);
+
+        return back()->with('success', 'Password berhasil diubah.');
+    }
+
+    public function bookingInput(Request $request)
+    {
+        $category = $request->query('category', 'barber');
+        $services = self::WALK_IN_SERVICE_CATALOG[$category] ?? self::WALK_IN_SERVICE_CATALOG['barber'];
+        
+        $staffPosition = $category === 'mua' ? 'MUA Artist' : 'Hair Stylist';
+        $employees = Employee::where('position', $staffPosition)->get();
+        
+        return view('pelanggan.BookingInput', compact('employees', 'services', 'category'));
+    }
+
+    public function storeBooking(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'category' => ['required', 'string', \Illuminate\Validation\Rule::in(['barber', 'mua'])],
+            'service_name' => 'required|string|max:120',
+            'service_price' => 'required|integer',
+            'staff_name' => 'required|string|max:100',
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required|string',
+            'customer_name' => 'required|string|max:100',
+            'phone' => 'required|string|max:20',
+            'notes' => 'nullable|string',
+        ]);
+
+        $appointmentAt = CarbonImmutable::parse($data['appointment_date'] . ' ' . $data['appointment_time']);
+
+        Booking::create([
+            'customer_name' => $data['customer_name'],
+            'category' => $data['category'],
+            'service_name' => $data['service_name'],
+            'service_price' => $data['service_price'],
+            'staff_name' => $data['staff_name'],
+            'user_id' => $request->user()->getKey(),
+            'appointment_at' => $appointmentAt,
+            'status' => 'pending',
+            'notes' => $data['notes'] . ' (Phone: ' . $data['phone'] . ')',
+        ]);
+
+        return to_route('pelanggan.order')->with('success', 'Booking berhasil dibuat!');
+    }
+
+    public function cancelBooking(Request $request, Booking $booking): RedirectResponse
+    {
+        abort_unless($booking->user_id === $request->user()->id, 403);
+        abort_unless(in_array($booking->status, ['pending', 'confirmed']), 400, 'Booking cannot be cancelled.');
+
+        $booking->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'Pesanan berhasil dibatalkan.');
     }
 }

@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Bootstrap 5.3 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
         :root {
@@ -69,6 +69,11 @@
                 max-width: 980px;
                 padding: 2rem;
             }
+        }
+
+        .dropdown-item:hover, .dropdown-item:focus {
+            background-color: var(--card-hover) !important;
+            color: var(--gold-primary) !important;
         }
 
         @media (min-width: 1200px) {
@@ -829,9 +834,36 @@
                 <div class="header-date">{{ $dashboardDate }}</div>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn-circle-icon" title="Notifikasi" onclick="showNotification()">
-                    <i class="fa-regular fa-bell"></i>
-                </button>
+                <div class="dropdown">
+                    <button class="btn-circle-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Notifikasi">
+                        <i class="fa-regular fa-bell"></i>
+                    </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 320px; background-color: var(--card-bg); border-color: var(--card-border);">
+            <li>
+                <h6 class="dropdown-header text-white fw-bold d-flex justify-content-between align-items-center">
+                    Notifikasi Kehadiran
+                    @php $loggedInUsers = \App\Models\User::whereDate('last_login_at', now()->toDateString())->get(); @endphp
+                    <span class="badge bg-success rounded-pill">{{ $loggedInUsers->count() }}</span>
+                </h6>
+            </li>
+            <li><hr class="dropdown-divider" style="border-color: var(--card-border);"></li>
+            @forelse($loggedInUsers as $user)
+            <li>
+                <a class="dropdown-item d-flex align-items-center gap-3 py-2" style="color: var(--text);" href="#">
+                    <div class="avatar-initial" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                    </div>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.85rem;">{{ $user->name }}</div>
+                        <div class="text-success" style="font-size: 0.75rem;"><i class="fa-solid fa-circle-check me-1"></i>Telah login hari ini</div>
+                    </div>
+                </a>
+            </li>
+            @empty
+            <li><span class="dropdown-item-text text-muted" style="font-size: 0.85rem;">Belum ada yang login hari ini.</span></li>
+            @endforelse
+        </ul>
+                </div>
                 <a href="{{ route('logout') }}" class="btn-circle-icon" title="Keluar">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 </a>

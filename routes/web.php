@@ -25,7 +25,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/riwayat', [DashboardController::class, 'riwayat']);
         Route::get('/order', [DashboardController::class, 'order'])->name('pelanggan.order');
         Route::get('/profile', [DashboardController::class, 'profile'])->name('pelanggan.profile');
+        Route::put('/profile/password', [DashboardController::class, 'updatePassword'])->name('pelanggan.password.update');
         Route::get('/booking/input', [DashboardController::class, 'bookingInput'])->name('pelanggan.booking.input');
+        Route::post('/booking/store', [DashboardController::class, 'storeBooking'])->name('pelanggan.booking.store');
+        Route::patch('/booking/{booking}/cancel', [DashboardController::class, 'cancelBooking'])->name('pelanggan.booking.cancel');
     });
 });
 
